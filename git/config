@@ -1,0 +1,17 @@
+[alias]
+    # rebase a given pull request number on current branch
+    rebase-pr = "!f() {\
+    	p=$1 && \
+    	b=`git symbolic-ref -q --short HEAD` && \
+    	r=`git config branch.$b.remote`; \
+    	r=${r:-origin} && \
+        git fetch $r pull/$p/head:pr-$p && \
+        git fetch -f $r pull/$p/merge:PR_MERGE_HEAD && \
+        git rebase --onto $b PR_MERGE_HEAD^ pr-$p && \
+        git checkout $b && \
+        git merge --quiet --ff-only pr-$p && \
+        git branch -D PR_MERGE_HEAD && \
+        git branch -D pr-$p && \
+        echo && \
+        git diff --stat $b..$r/$b && echo && \
+        git rebase -i $r/$b;}; f"
