@@ -20,6 +20,20 @@ HEADERS = {'Content-type': 'application/json'}
 ALREADY_PROCESSED_MODULES_FILE = 'already_processed.txt'
 
 
+def make_request(url):
+    response = requests.get(
+        SERVER + url,
+        headers=HEADERS,
+        auth=AUTH
+    )
+    try:
+        return response.json()
+    except ValueError:
+        # probably got throttled, sorry for the spam Transifex
+        print(response.text)
+        return []
+
+
 def get_source_entity_hash(key, context):
     """Term access url is the MD5 of 'key:context' """
     if isinstance(context, list):
@@ -37,11 +51,7 @@ def get_source_entity_hash(key, context):
 
 def mark_term_as_reviewed(resource, lang):
     strings_url = "/api/2/project/%s/resource/%s/translation/%s/strings/" % (PROJECT_NAME, resource, lang)
-    strings = requests.get(
-        SERVER + strings_url,
-        headers=HEADERS,
-        auth=AUTH
-    ).json()
+    strings = make_request(strings_url)
 
     update_terms = []
     for term in strings:
@@ -69,19 +79,11 @@ def main():
     # getting all the languages
     langs_url = "/api/2/project/%s/languages/" % PROJECT_NAME
 
-    lang_entries = requests.get(
-        SERVER + langs_url,
-        headers=HEADERS,
-        auth=AUTH
-    ).json()
+    lang_entries = make_request(langs_url)
 
     # getting all the resources
     res_url = "/api/2/project/%s/resources/" % PROJECT_NAME
-    res_entries = requests.get(
-        SERVER + res_url,
-        headers=HEADERS,
-        auth=AUTH
-    ).json()
+    res_entries = make_request(res_url)
 
     with open(ALREADY_PROCESSED_MODULES_FILE, 'rb') as f:
         already_processed_modules = pickle.load(f)
