@@ -5,9 +5,10 @@
 # usefull when you import the terms from another platerform
 
 from hashlib import md5
-import requests
 import json
+import os
 import pickle
+import requests
 
 SERVER = "https://www.transifex.com"
 PROJECT_NAME = "odoo-80"
@@ -17,7 +18,7 @@ TRANSIFEX_PASSWORD = "b0b"
 AUTH = (TRANSIFEX_USERNAME, TRANSIFEX_PASSWORD)
 HEADERS = {'Content-type': 'application/json'}
 
-ALREADY_PROCESSED_MODULES_FILE = 'already_processed.txt'
+ALREADY_PROCESSED_MODULES_FILE = 'already_processed.bin'
 
 
 def make_request(url):
@@ -85,8 +86,11 @@ def main():
     res_url = "/api/2/project/%s/resources/" % PROJECT_NAME
     res_entries = make_request(res_url)
 
-    with open(ALREADY_PROCESSED_MODULES_FILE, 'rb') as f:
-        already_processed_modules = pickle.load(f)
+    if os.path.exists(ALREADY_PROCESSED_MODULES_FILE):
+        with open(ALREADY_PROCESSED_MODULES_FILE, 'rb') as f:
+            already_processed_modules = pickle.load(f)
+    else:
+        already_processed_modules = []
     for resource in res_entries:
         resource_name = resource['name']
         if resource_name in already_processed_modules:
