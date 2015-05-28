@@ -7,11 +7,6 @@ import sys
 from datetime import datetime
 from txclib import commands
 
-# each path should contain a .tx/config file
-CODE_PATHS = [
-    'path/to/odoo/7.0',
-    'path/to/odoo/8.0',
-]
 PULL_ARGS = [
     '--mode', 'reviewed',
 ]
@@ -53,6 +48,10 @@ def commit_translations(code_path, commit=False):
         print("... skipped, dry run")
 
 if __name__ == '__main__':
-    commit = len(sys.argv) > 1 and sys.argv[1] == '--commit' or False
-    for code_path in CODE_PATHS:
+    if not len(sys.argv) > 1 or not os.path.isdir(sys.argv[1]):
+        print("Usage: pull-translations.py CODE_PATH [--commit]")
+    else:
+        # each path should contain a .tx/config file
+        code_path = sys.argv[1]
+        commit = len(sys.argv) > 2 and sys.argv[2] == '--commit' or False
         commit_translations(code_path, commit)
