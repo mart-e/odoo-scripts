@@ -2,6 +2,7 @@
 
 import os
 import subprocess
+import sys
 from datetime import datetime
 from txclib import commands
 
@@ -16,21 +17,36 @@ PULL_ARGS = [
 
 
 def pull_project_translation(path_to_tx):
-    print("Starting pulling at %s" % datetime.now().isoformat())
+    print("Fetching translations at %s" % datetime.now().isoformat())
     print("Pulling to %s" % path_to_tx)
 
     commands.cmd_pull(PULL_ARGS, path_to_tx)
-    print("Done at %s" % datetime.now().isoformat())
+
+    print("Done fetching at %s" % datetime.now().isoformat())
 
 
-def commit_translations():
-    subprocess.call(['git', 'pull'])
+def commit_translations(code_path, commit=False):
+    os.chdir(code_path)
     msg = "[I18N] Update translation terms from Transifex"
-    subprocess.call(['git', 'commit', '-a', '-m', msg])
-    subprocess.call(['git', 'push'])
+    branch = subprocess.check_output('git symbolic-ref -q --short HEAD', shell=True).replace('\n', '')  # branch name
+    remote = subprocess.check_output(['git', 'config', 'branch.%s.remote' % branch]).replace('\n', '')  # remote name
+    print("Fetching and pushing to %s/%s" % (remote, branch))
+    if commit:
+        # make have same code as remote
+        subprocess.call(['git', 'fetch', remote, branch])
+        subprocess.call(['git', 'reset', '%s/%s' % (remote, branch), '--hard'])
+
+    pull_project_translation(code_path)
+
+    if commit:
+        # add new files
+        subprocess.call(['git', 'add', '-A'])
+        subprocess.call(['git', 'commit', '-m', msg])
+        subprocess.call(['git', 'push', remote, branch])
+    else:
+        print("... skipped, dry run")
 
 if __name__ == '__main__':
+    commit = len(sys.argv) > 1 and sys.argv[1] == '--commit' or False
     for code_path in CODE_PATHS:
-        os.chdir(code_path)
-        pull_project_translation(code_path)
-        # commit_translations()
+        commit_translations(code_path, commit)
