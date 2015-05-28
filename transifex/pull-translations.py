@@ -1,4 +1,5 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
+# fetch latest translations from Transifex and commit them
 
 import os
 import subprocess
@@ -18,6 +19,9 @@ PULL_ARGS = [
 
 # path_to_tx = len(sys.argv) > 1 and sys.argv[1] or utils.find_dot_tx()
 def pull_project_translation(path_to_tx):
+    """Fetch the translations from Transifex
+    path_to_tx: path containing a .tx/config file
+    """
     print("Fetching translations at %s" % datetime.now().isoformat())
     print("Pulling to %s" % path_to_tx)
 
@@ -27,6 +31,7 @@ def pull_project_translation(path_to_tx):
 
 
 def commit_translations(code_path, commit=False):
+    """Reset the code in :code_path: on current remote and push the new translations"""
     os.chdir(code_path)
     msg = "[I18N] Update translation terms from Transifex"
     branch = subprocess.check_output('git symbolic-ref -q --short HEAD', shell=True).replace('\n', '')  # branch name
