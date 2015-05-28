@@ -6,7 +6,7 @@ import sys
 from datetime import datetime
 from txclib import commands
 
-# path_to_tx = len(sys.argv) > 1 and sys.argv[1] or utils.find_dot_tx()
+# each path should contain a .tx/config file
 CODE_PATHS = [
     'path/to/odoo/7.0',
     'path/to/odoo/8.0',
@@ -16,6 +16,7 @@ PULL_ARGS = [
 ]
 
 
+# path_to_tx = len(sys.argv) > 1 and sys.argv[1] or utils.find_dot_tx()
 def pull_project_translation(path_to_tx):
     print("Fetching translations at %s" % datetime.now().isoformat())
     print("Pulling to %s" % path_to_tx)
