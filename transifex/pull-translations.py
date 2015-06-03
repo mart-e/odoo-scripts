@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # fetch latest translations from Transifex and commit them
 
+import argparse
 import os
 import subprocess
 import sys
@@ -25,7 +26,7 @@ def pull_project_translation(path_to_tx):
     print("Done fetching at %s" % datetime.now().isoformat())
 
 
-def commit_translations(code_path, commit=False):
+def commit_translations(code_path, commit=False, push=False):
     """Reset the code in :code_path: on current remote and push the new translations"""
     os.chdir(code_path)
     msg = "[I18N] Update translation terms from Transifex"
@@ -43,15 +44,23 @@ def commit_translations(code_path, commit=False):
         # add new files
         subprocess.call(['git', 'add', '-A'])
         subprocess.call(['git', 'commit', '-m', msg])
-        subprocess.call(['git', 'push', remote, branch])
+        if push:
+            subprocess.call(['git', 'push', remote, branch])
     else:
         print("... skipped, dry run")
 
 if __name__ == '__main__':
-    if not len(sys.argv) > 1 or not os.path.isdir(sys.argv[1]):
-        print("Usage: pull-translations.py CODE_PATH [--commit]")
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--path', required=True,
+                        help='path to code directory, containins .tx/config file')
+    parser.add_argument('--commit', action='store_true',
+                        help='Make a local commit of fetched translations')
+    parser.add_argument('--push', action='store_true',
+                        help='Push local commit to remote')
+
+    args = parser.parse_args()
+    if (args.push and not args.commit) or not os.path.isdir(args.path):
+        parser.print_help()
     else:
-        # each path should contain a .tx/config file
-        code_path = sys.argv[1]
-        commit = len(sys.argv) > 2 and sys.argv[2] == '--commit' or False
-        commit_translations(code_path, commit)
+        commit_translations(args.path, args.commit, args.push)
