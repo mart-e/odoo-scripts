@@ -21,17 +21,15 @@ def pull_project_translation(path_to_tx):
     print("Fetching translations at %s" % datetime.now().isoformat())
     print("Pulling to %s" % path_to_tx)
 
-    # commands.cmd_pull(PULL_ARGS, path_to_tx)
-    subprocess.call(['cd', path_to_tx])
-
     # tx uses timestamp to know if we should fetch translations, git doesn't give a shit about timestamp
     subprocess.call('touch -d "$(date -R --date=\'7 days ago\')" addons/*/i18n/*', shell=True)
     subprocess.call('touch -d "$(date -R --date=\'7 days ago\')" openerp/addons/*/i18n/*', shell=True)
 
+    # commands.cmd_pull(PULL_ARGS, path_to_tx)
     subprocess.call(['tx', 'pull'] + PULL_ARGS)
 
-    # remove changes with only small changes
-    # find %s -name '*.pot' -exec sh -c 'test `git diff {} | wc -l` -eq 15' \; -print | xargs git checkout --
+    # remove changes with only small changes, 13 lines of diff
+    subprocess.call("git status --short | grep 'i18n' | sed 's/^ M *//' | xargs -I {} bash -c 'if test `git diff {} | wc -l` -eq 13; then git checkout -- {}; fi'", shell=True)
     print("Done fetching at %s" % datetime.now().isoformat())
 
 
