@@ -28,8 +28,8 @@ def pull_project_translation(path_to_tx):
     # commands.cmd_pull(PULL_ARGS, path_to_tx)
     subprocess.call(['tx', 'pull'] + PULL_ARGS)
 
-    # remove changes with only small changes, 13 lines of diff
-    subprocess.call("git status --short | grep 'i18n' | sed 's/^ M *//' | xargs -I {} bash -c 'if test `git diff {} | wc -l` -eq 13; then git checkout -- {}; fi'", shell=True)
+    # remove changes with only Last-Translator or PO-Revision-Date
+    subprocess.call("""git status --short | grep '.po' | sed 's/^ M *//' | xargs -I {} bash -c 'if test `git diff {} | grep "^+" | grep -v "^+++\|^+#\|Last-Translator\|PO-Revision-Date" | wc -l` -eq 0; then git checkout -- {}; fi'""", shell=True)
     print("Done fetching at %s" % datetime.now().isoformat())
 
 
