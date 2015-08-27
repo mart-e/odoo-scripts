@@ -4,12 +4,11 @@
 import argparse
 import os
 import subprocess
-import sys
 from datetime import datetime
-from txclib import commands
 
 PULL_ARGS = [
     '--mode', 'reviewed',
+    '--skip'
 ]
 
 
@@ -22,8 +21,8 @@ def pull_project_translation(path_to_tx):
     print("Pulling to %s" % path_to_tx)
 
     # tx uses timestamp to know if we should fetch translations, git doesn't give a shit about timestamp
-    subprocess.call('touch -d "$(date -R --date=\'7 days ago\')" addons/*/i18n/*', shell=True)
-    subprocess.call('touch -d "$(date -R --date=\'7 days ago\')" openerp/addons/*/i18n/*', shell=True)
+    subprocess.call('touch -d "$(date -R --date=\'21 days ago\')" addons/*/i18n/*', shell=True)
+    subprocess.call('touch -d "$(date -R --date=\'21 days ago\')" openerp/addons/*/i18n/*', shell=True)
 
     # commands.cmd_pull(PULL_ARGS, path_to_tx)
     subprocess.call(['tx', 'pull'] + PULL_ARGS)
