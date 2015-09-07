@@ -28,7 +28,7 @@ def pull_project_translation(path_to_tx):
     subprocess.call(['tx', 'pull'] + PULL_ARGS)
 
     # remove changes with only Last-Translator or PO-Revision-Date
-    subprocess.call("""git status --short | grep '.po' | sed 's/^ M *//' | xargs -I {} bash -c 'if test `git diff {} | grep "^+" | grep -v "^+++\|^+#\|Last-Translator\|PO-Revision-Date" | wc -l` -eq 0; then git checkout -- {}; fi'""", shell=True)
+    subprocess.call("""git status --short | grep '.po' | grep  -v "^??" | sed 's/^ M *//' | sed 's/^?? *//' | xargs -I {} bash -c 'if test `git diff {} | grep "^+" | grep -v "^+++\|^+#\|Last-Translator\|PO-Revision-Date" | wc -l` -eq 0; then git checkout -- {}; fi'""", shell=True)
     print("Done fetching at %s" % datetime.now().isoformat())
 
 
