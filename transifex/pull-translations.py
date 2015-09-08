@@ -8,7 +8,9 @@ from datetime import datetime
 
 PULL_ARGS = [
     '--mode', 'reviewed',
-    '--skip'
+    '--skip',
+    '--all',
+    '--minimum-perc', '10'
 ]
 
 
