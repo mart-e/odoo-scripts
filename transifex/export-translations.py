@@ -6,20 +6,20 @@
 import xmlrpclib
 import os
 import glob
+from os.path import expanduser as e
 
 host = 'localhost'
 port = 8069
-db = 'm1'
+db = '9e'
 
 username = 'admin'
 password = 'admin'
 
-BASE_MODULE_PATH = '/home/mat/odoo/odoo/openerp/addons/base/i18n'
-ADDONS_PATH = '/home/mat/odoo/odoo/addons/'
-TXPATH = '/home/mat/odoo/odoo/.tx/config'
-ENT_ADDONS_PATH = '/home/mat/odoo/enterprise/'
-ENT_TXPATH = '/home/mat/odoo/enterprise/.tx/config'
-
+BASE_MODULE_PATH = e('~/odoo/odoo/openerp/addons/base/i18n')
+ADDONS_PATH = e('~/odoo/odoo/addons/')
+TXPATH = e('~/odoo/odoo/.tx/config')
+ENT_ADDONS_PATH = e('~/odoo/enterprise/')
+ENT_TXPATH = e('~/odoo/enterprise/.tx/config')
 
 l = glob.glob(os.path.join(ADDONS_PATH, '*/__init__.py'))
 # without 'web' as is in enterprise and breaks if more than one 'theme_'
@@ -35,6 +35,10 @@ ENT_ADDONS_1 = [os.path.basename(os.path.dirname(i)) for i in l if (
     os.path.basename(os.path.dirname(i)) != 'account_extension')]
 ENT_ADDONS_2 = [os.path.basename(os.path.dirname(i)) for i in l if ('l10n_' in i and 'l10n_be' not in i and 'l10n_ch' not in i and 'l10n_multilang' not in i)]
 ENT_ADDONS_3 = [os.path.basename(os.path.dirname(i)) for i in l if ('l10n_be' in i or 'l10n_ch' in i or 'l10n_sa' in i or 'l10n_multilang' in i)]
+
+
+MODULES_TO_EXPORT = [ADDONS_1, ENT_ADDONS_1, ADDONS_2, ENT_ADDONS_2, ADDONS_3, ENT_ADDONS_3]
+
 
 uid = None
 url = '%s://%s:%s' % ('http' if port != 443 else 'https', host, port)  # for local instance
@@ -146,7 +150,7 @@ def export_terms(modules, addons_path):
 # generate_tx_config(ADDONS_PATH, TXPATH)
 # generate_tx_config(ENT_ADDONS_PATH, ENT_TXPATH)
 
-for i, modules_list in enumerate([ADDONS_1, ENT_ADDONS_1, ADDONS_2, ENT_ADDONS_2, ADDONS_3, ENT_ADDONS_3]):
+for i, modules_list in enumerate(MODULES_TO_EXPORT):
     path = i % 2 and ENT_ADDONS_PATH or ADDONS_PATH
     install_modules(modules_list)
     export_terms(modules_list, path)
