@@ -1,6 +1,6 @@
 #!/usr/bin/env python2
 #
-# export the terms of all odoo modules
+# install and export the terms of all odoo modules
 #
 
 import xmlrpclib
