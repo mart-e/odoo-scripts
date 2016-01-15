@@ -8,6 +8,7 @@ import os
 import glob
 from os.path import expanduser as e
 
+# connection information
 host = 'localhost'
 port = 8069
 db = '9e'
@@ -15,6 +16,7 @@ db = '9e'
 username = 'admin'
 password = 'admin'
 
+# paths to community and enterprise modules
 BASE_MODULE_PATH = e('~/odoo/odoo/openerp/addons/base/i18n')
 ADDONS_PATH = e('~/odoo/odoo/addons/')
 TXPATH = e('~/odoo/odoo/.tx/config')
@@ -36,7 +38,8 @@ ENT_ADDONS_1 = [os.path.basename(os.path.dirname(i)) for i in l if (
 ENT_ADDONS_2 = [os.path.basename(os.path.dirname(i)) for i in l if ('l10n_' in i and 'l10n_be' not in i and 'l10n_ch' not in i and 'l10n_multilang' not in i)]
 ENT_ADDONS_3 = [os.path.basename(os.path.dirname(i)) for i in l if ('l10n_be' in i or 'l10n_ch' in i or 'l10n_sa' in i or 'l10n_multilang' in i)]
 
-
+# the list of lists of modules to export, alterning community and enterpruse modules
+# e.g. MODULES_TO_EXPORT = [[], ['account_contract_dashboard', 'account_reports']]
 MODULES_TO_EXPORT = [ADDONS_1, ENT_ADDONS_1, ADDONS_2, ENT_ADDONS_2, ADDONS_3, ENT_ADDONS_3]
 
 
