@@ -48,9 +48,7 @@ def guess_best_labels(pull):
         'newapi' in branch or \
         'new-api' in branch or \
         'migration' in title or \
-        'new api' in title or \
-        'migration' in body or \
-        'new api' in body:
+        'new api' in title:
         return ['MigrationNewAPI', 'RD']
     return ['RD']
 
