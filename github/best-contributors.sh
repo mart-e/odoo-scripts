@@ -24,6 +24,7 @@ echo -e "Top 10 company!\n$top_company\n"
 
 for pofile in openerp/addons/base/i18n/*.po
 do
-    # not working (yet)
-    pocount --short-string addons/*/i18n/${pofile##*/},openerp/addons/base/i18n/${pofile##*/} | grep -v "total: 0" | awk '{print $4}' | awk '{s+=$1} END {print s}'
+    localname=${pofile##*/}
+    total=$(pocount --short-string {addons/*/i18n/$localname,openerp/addons/base/i18n/$localname} | grep -v "total: 0" | awk '{print $4}' | awk '{s+=$1} END {print s}')
+    echo $localname $total
 done
