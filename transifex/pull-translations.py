@@ -7,10 +7,8 @@ import subprocess
 from datetime import datetime
 
 PULL_ARGS = [
-    '--mode', 'reviewed',
     '--skip',
-    '--all',
-    '--minimum-perc', '10'
+    '--minimum-perc', '10',
 ]
 
 
@@ -23,6 +21,7 @@ def pull_project_translation(path_to_tx):
     print("Pulling to %s" % path_to_tx)
 
     # tx uses timestamp to know if we should fetch translations, git doesn't give a shit about timestamp
+    subprocess.call('touch -d "$(date -R --date=\'21 days ago\')" */i18n/*', shell=True)
     subprocess.call('touch -d "$(date -R --date=\'21 days ago\')" addons/*/i18n/*', shell=True)
     subprocess.call('touch -d "$(date -R --date=\'21 days ago\')" openerp/addons/*/i18n/*', shell=True)
 
