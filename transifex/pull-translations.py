@@ -24,6 +24,7 @@ def pull_project_translation(path_to_tx):
     subprocess.call('touch -d "$(date -R --date=\'21 days ago\')" */i18n/*', shell=True)
     subprocess.call('touch -d "$(date -R --date=\'21 days ago\')" addons/*/i18n/*', shell=True)
     subprocess.call('touch -d "$(date -R --date=\'21 days ago\')" openerp/addons/*/i18n/*', shell=True)
+    subprocess.call('touch -d "$(date -R --date=\'21 days ago\')" odoo/addons/*/i18n/*', shell=True)
 
     # commands.cmd_pull(PULL_ARGS, path_to_tx)
     subprocess.call(['tx', 'pull'] + PULL_ARGS)
