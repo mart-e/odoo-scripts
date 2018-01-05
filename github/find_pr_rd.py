@@ -9,12 +9,16 @@ from urlparse import urljoin
 
 BASE_URL = "https://api.github.com/repos"
 REPO = "odoo/odoo"
+DEV_REPO = 'odoo-dev/odoo'
+
 PULLS_URL = "%s/%s/pulls" % (BASE_URL, REPO)
 LABELS_URL = "%s/%s/issues/%%s/labels" % (BASE_URL, REPO)
+COMMENT_URL = "%s/%s/issues/%%s/comments" % (BASE_URL, REPO)
+IGNORED_LABELS = ['8.0', '9.0', '10.0', '11.0', '12.0']
 
 total = 0
 
-AUTH = HTTPBasicAuth('USERNAME', 'PASSWORD')
+AUTH = HTTPBasicAuth('C3POdoo', 'OhYeahIAmDefinitelyNotHardcoingMyPasswordHere')
 
 
 PR_FILE = 'github_pr.json'
@@ -59,18 +63,19 @@ def mark_label(pr_number, labels):
     res = rpost(label_url, labels)
     return res.status_code
 
-
-def get_prs(url):
+def list_pr(url, version='7.0'):
     global total
     global pr_info
 
     print "Get PR: %s" % url
     res = rget(url, params={'state':'open'})
+    skip = True
     for pull in res.json():
         pr_number = str(pull['number'])
 
         if pr_info.get(pr_number):
             continue
+        skip = False
 
         full_name = pull['head']['repo'] and pull['head']['repo']['full_name'] or 'unknown repository'
         pr_info[pr_number] = {
@@ -84,21 +89,70 @@ def get_prs(url):
             'number': pull['number'],
         }
 
-        if full_name == 'odoo-dev/odoo':
+        if full_name == DEV_REPO:
             total += 1
             print "#%s (%s): %s" % (pull['number'], total, pull['title'])
 
             label_url = LABELS_URL % pr_number
             labels = rget(label_url).json()
+            label_names = labels and [l['name'] for l in labels] or []
             pr_info[pr_number]['labels'] = labels
-            if not labels:
+            # no label of just ignored ones
+            if not label_names or not (set(label_names) - set(IGNORED_LABELS)):
                 labels = guess_best_labels(pull)
                 mark_label(pr_number, labels)
 
     with open(PR_FILE, 'w') as f:
         json.dump(pr_info, f)
 
-    if res.links.get('next'):
+    if not skip and res.links.get('next'):
+        return res.links['next']['url']
+    return False
+
+
+def tag_prs(url):
+    global total
+    global pr_info
+
+    print "Get PR: %s" % url
+    res = rget(url, params={'state':'open'})
+    skip = True
+    for pull in res.json():
+        pr_number = str(pull['number'])
+
+        if pr_info.get(pr_number):
+            continue
+        skip = False
+
+        full_name = pull['head']['repo'] and pull['head']['repo']['full_name'] or 'unknown repository'
+        pr_info[pr_number] = {
+            'head': pull['head'],
+            'number': pull['number'],
+            'title': pull['title'],
+            'url': pull['url'],
+            'full_name': full_name,
+            'user': pull['user']['login'],
+            'state': pull['state'],
+            'number': pull['number'],
+        }
+
+        if full_name == DEV_REPO:
+            total += 1
+            print "#%s (%s): %s" % (pull['number'], total, pull['title'])
+
+            label_url = LABELS_URL % pr_number
+            labels = rget(label_url).json()
+            pr_info[pr_number]['labels'] = labels
+            label_names = labels and [l['name'] for l in labels] or []
+            # no label of just ignored ones
+            if not label_names or not (set(label_names) - set(IGNORED_LABELS)):
+                labels = guess_best_labels(pull)
+                mark_label(pr_number, labels)
+
+    with open(PR_FILE, 'w') as f:
+        json.dump(pr_info, f)
+
+    if not skip and res.links.get('next'):
         return res.links['next']['url']
     return False
 
@@ -109,6 +163,6 @@ if os.path.isfile(PR_FILE):
 else:
     pr_info = {}
 
-res = get_prs(PULLS_URL)
+res = tag_prs(PULLS_URL)
 while res:
-    res = get_prs(res)
+    res = tag_prs(res)
