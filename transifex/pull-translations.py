@@ -8,7 +8,7 @@ from datetime import datetime
 
 PULL_ARGS = [
     '--skip',
-    '--minimum-perc', '10',
+    # '--minimum-perc', '10',
 ]
 
 
@@ -25,6 +25,7 @@ def pull_project_translation(path_to_tx):
     subprocess.call('touch -d "$(date -R --date=\'21 days ago\')" addons/*/i18n/*', shell=True)
     subprocess.call('touch -d "$(date -R --date=\'21 days ago\')" openerp/addons/*/i18n/*', shell=True)
     subprocess.call('touch -d "$(date -R --date=\'21 days ago\')" odoo/addons/*/i18n/*', shell=True)
+    subprocess.call('touch -d "$(date -R --date=\'21 days ago\')" locale/*/LC_MESSAGES/*', shell=True)
 
     # commands.cmd_pull(PULL_ARGS, path_to_tx)
     subprocess.call(['tx', 'pull'] + PULL_ARGS)
@@ -40,7 +41,7 @@ def commit_translations(code_path, commit=False, push=False):
     msg = "[I18N] Update translation terms from Transifex"
     branch = subprocess.check_output('git symbolic-ref -q --short HEAD', shell=True).replace('\n', '')  # branch name
     remote = subprocess.check_output(['git', 'config', 'branch.%s.remote' % branch]).replace('\n', '')  # remote name
-    print("Fetching and pushing to %s/%s" % (remote, branch))
+    print("Working with to %s/%s" % (remote, branch))
     if commit:
         # make have same code as remote
         subprocess.call(['git', 'fetch', remote, branch])
