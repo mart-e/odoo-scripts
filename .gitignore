@@ -40,3 +40,5 @@ setup/win32/static/postgresql*.exe
 /src/
 
 *.json
+
+.env
