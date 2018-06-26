@@ -46,7 +46,16 @@ for search in SEARCH_CRITERIAS:
 
     for item in search_res['items']:
         rurl = item['repository']['html_url']
+        murl = item['html_url']  # full path to file that matched
         if rurl.startswith("https://github.com/odoo/"):
+            # do not match on odoo's repositories
+            continue
+
+        if (murl.endswith('__manifest__.py') or  # name of the module in 'depends'
+            murl.endswith('README.md') or  # documentation
+            murl.endswith('.txt') or
+            murl.endswith('.rst') or
+            murl.endswith('MANIFEST.in')):  # debian package
             continue
 
         found.setdefault(rurl, [0, set()])
