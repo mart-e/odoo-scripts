@@ -1,10 +1,16 @@
 [alias]
+
+    # expected format: git rebase-pr 42
     # rebase a given pull request number on current branch
+    # p = the number of the pr, e.g. 42
+    # b = current user branch, e.g. master
+    # r = the remote of current branch, e.g. origin
+    # e.g. git fetch origin pull/42/head:pr-42
     rebase-pr = "!f() {\
-    	p=$1 && \
-    	b=`git symbolic-ref -q --short HEAD` && \
-    	r=`git config branch.$b.remote`; \
-    	r=${r:-origin} && \
+        p=$1 && \
+        b=`git symbolic-ref -q --short HEAD` && \
+        r=`git config branch.$b.remote`; \
+        r=${r:-origin} && \
         git fetch $r pull/$p/head:pr-$p && \
         git fetch -f $r pull/$p/merge:PR_MERGE_HEAD && \
         git rebase --onto $b PR_MERGE_HEAD^ pr-$p && \
@@ -15,3 +21,49 @@
         echo && \
         git diff --stat $b..$r/$b && echo && \
         git rebase -i $r/$b;}; f"
+
+    # expected format: git get-branch mart-e:my-master
+    # if the remote is not present, add it
+    # fetch the branch and checkout
+    get-branch = "!f() {\
+        localbranch=`git symbolic-ref -q --short HEAD`; \
+        localremote=`git config branch.$localbranch.remote`; \
+        localurl=`git config remote.$localremote.url`; \
+        \
+        remote=`echo $1 | cut -d ":" -f1`; \
+        branch=`echo $1 | cut -d ":" -f2`; \
+        \
+        remoteurlpresent=`git config remote.$remote.url`; \
+        [ -z $remoteurlpresent ] && {  \
+            \
+            lefturl='git@github.com:'; \
+            righturl=`echo $localurl | cut -d "/" -f2`; \
+            \
+            isssh=`echo $localurl | grep 'git@' | wc -l`; \
+            [ $isssh -eq 0 ] && { \
+                lefturl='https://github.com/'; \
+                righturl=`echo $url | cut -d "/" -f5`; \
+            }; \
+            \
+            newurl="$lefturl$remote/$righturl"; \
+            git remote add $remote "$newurl"; \
+            \
+        }; \
+        git fetch $remote $branch; \
+        remotebranchpresent=`git config remote.$remote.url`; \
+        [ -z $remotebranchpresent ] && {  \
+            git fetch $remote $branch; \
+            git branch $branch $remote/$branch; \
+        }; \
+        git checkout $branch; \
+        echo $remote/$branch; \
+    }; f"
+
+    # expected format: git rem-branch mart-e:my-master
+    # remove branch and remote
+    rem-branch = "!f() {\
+        remote=`echo $1 | cut -d ":" -f1`; \
+        branch=`echo $1 | cut -d ":" -f2`; \
+        git branch -D $branch; \
+        git remote remove $remote; \
+    }; f"
