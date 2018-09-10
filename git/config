@@ -67,3 +67,34 @@
         git branch -D $branch; \
         git remote remove $remote; \
     }; f"
+
+    # expected format: git create_pr mart-e/master
+    # open a browser to create a PR to target remote/branch from current
+    create-pr = "!f() {\
+        branch=`git symbolic-ref -q --short HEAD`; \
+        remote=`git config branch.$branch.remote`; \
+        \
+        remoteurl=`git config remote.$remote.url`; \
+        rmiddleurl=`echo $remoteurl | cut -d ":" -f2 | cut -d "/" -f1`; \
+        isssh=`echo $remoteurl | grep 'git@' | wc -l`; \
+        [ $isssh -eq 0 ] && { \
+            rmiddleurl=`echo $tremoteurl | cut -d "/" -f4`; \
+        }; \
+        \
+        tremote=`echo $1 | cut -d "/" -f1`; \
+        tbranch=`echo $1 | cut -d "/" -f2`; \
+        \
+        tremoteurl=`git config remote.$tremote.url`; \
+        lefturl='https://github.com/'; \
+        middleurl=`echo $tremoteurl | cut -d ":" -f2 | cut -d "/" -f1`; \
+        righturl=`echo $tremoteurl | cut -d ":" -f2 | cut -d "/" -f2 | cut -d "." -f1`; \
+        isssh=`echo $tremoteurl | grep 'git@' | wc -l`; \
+        [ $isssh -eq 0 ] && { \
+            middleurl=`echo $tremoteurl | cut -d "/" -f4`; \
+            righturl=`echo $tremoteurl | cut -d "/" -f5 | cut -d "." -f1`; \
+        }; \
+        \
+        compareurl="$lefturl$middleurl/$righturl/compare/$tbranch...$rmiddleurl:$branch"; \
+        echo $compareurl; \
+        xdg-open "$compareurl";\
+    }; f"
