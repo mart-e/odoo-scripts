@@ -22,10 +22,11 @@
         git diff --stat $b..$r/$b && echo && \
         git rebase -i $r/$b;}; f"
 
-    # expected format: git get-branch mart-e:my-master
+    # expected format: git get-br mart-e:patch-42
+    # where "mart-e:patch-42" is the source in the description of the PR
     # if the remote is not present, add it
     # fetch the branch and checkout
-    get-branch = "!f() {\
+    get-br = "!f() {\
         localbranch=`git symbolic-ref -q --short HEAD`; \
         localremote=`git config branch.$localbranch.remote`; \
         localurl=`git config remote.$localremote.url`; \
@@ -49,21 +50,28 @@
             git remote add $remote "$newurl"; \
             \
         }; \
-        git fetch $remote $branch; \
-        remotebranchpresent=`git config remote.$remote.url`; \
-        [ -z $remotebranchpresent ] && {  \
+        remotebranchpresent=`git config branch.$branch.remote`; \
+        [[ -z $remotebranchpresent ]] && {  \
             git fetch $remote $branch; \
             git branch $branch $remote/$branch; \
+        } || [[ "$remotebranchpresent" != "$remote" ]] && {  \
+            echo "Branch $branch already present localy with remote $remotebranchpresent"; \
+            exit;  \
         }; \
         git checkout $branch; \
         echo $remote/$branch; \
     }; f"
 
-    # expected format: git rem-branch mart-e:my-master
-    # remove branch and remote
-    rem-branch = "!f() {\
+    # expected format: git rem-br odoo:my-master
+    # clean after a git get-br
+    rem-br = "!f() {\
         remote=`echo $1 | cut -d ":" -f1`; \
         branch=`echo $1 | cut -d ":" -f2`; \
+        current=`git symbolic-ref -q --short HEAD`; \
+        [[ "$current" == "$branch" ]] && {  \
+            echo "Checkout in a different branch before removing $branch"; \
+            exit;  \
+        }; \
         git branch -D $branch; \
         git remote remove $remote; \
     }; f"
