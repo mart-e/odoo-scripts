@@ -51,15 +51,15 @@
             \
         }; \
         remotebranchpresent=`git config branch.$branch.remote`; \
-        [[ -z $remotebranchpresent ]] && {  \
+        if [ -z $remotebranchpresent ]; then {  \
             git fetch $remote $branch; \
             git branch $branch $remote/$branch; \
-        } || [[ "$remotebranchpresent" != "$remote" ]] && {  \
-            echo "Branch $branch already present localy with remote $remotebranchpresent"; \
+        } elif [[ "$remotebranchpresent" != "$remote" ]]; then {  \
+            echo "Branch $branch already present localy with a different remote than $remote"; \
             exit;  \
-        }; \
+        } fi; \
         git checkout $branch; \
-        echo $remote/$branch; \
+        echo "Switched to $remote/$branch"; \
     }; f"
 
     # expected format: git rem-br odoo:my-master
