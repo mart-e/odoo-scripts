@@ -27,12 +27,18 @@
     # if the remote is not present, add it
     # fetch the branch and checkout
     get-br = "!f() {\
-        localbranch=`git symbolic-ref -q --short HEAD`; \
-        localremote=`git config branch.$localbranch.remote`; \
-        localurl=`git config remote.$localremote.url`; \
-        \
         remote=`echo $1 | cut -d ":" -f1`; \
         branch=`echo $1 | cut -d ":" -f2`; \
+        \
+        localbranch=`git symbolic-ref -q --short HEAD`; \
+        localremote=`git config branch.$localbranch.remote`; \
+        [ -z $localremote ] && { \
+            echo "Branch $localbranch is not linked to any remote, can not guess the URL for the remote $remote."; \
+            echo "Set a remote or switch to the current branch."; \
+            exit; \
+        }; \
+        \
+        localurl=`git config remote.$localremote.url`; \
         \
         remoteurlpresent=`git config remote.$remote.url`; \
         [ -z $remoteurlpresent ] && {  \
