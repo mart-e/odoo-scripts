@@ -6,7 +6,10 @@ import sys
 import requests
 
 from requests.auth import HTTPBasicAuth
-from urlparse import urljoin
+
+# username/password stored in .env file
+from dotenv import load_dotenv, find_dotenv
+load_dotenv(find_dotenv())
 
 BASE_URL = "https://api.github.com/repos"
 
@@ -27,8 +30,7 @@ TARGET_LABEL = ['RD', 'OE']
 
 total = 0
 
-AUTH = HTTPBasicAuth('C3POdoo', 'OhYeahIAmDefinitelyNotHardcoingMyPasswordHere')
-
+AUTH = HTTPBasicAuth(os.getenv('GITHUB_USERNAME'), os.getenv('GITHUB_PASSWORD'))
 
 
 def rget(url, **kw):
@@ -50,17 +52,11 @@ def rpost(url, data, **kw):
 def guess_best_labels(pull):
     branch = pull['head']['ref'].lower()
     title = pull['title'].lower()
-    body = pull['body'].lower()
+    body = (pull['body'] or '').lower()
     if 'opw' in branch or \
         'opw' in title or \
         'opw' in body:
         return ['OE']
-    if 'migration' in branch or \
-        'newapi' in branch or \
-        'new-api' in branch or \
-        'migration' in title or \
-        'new api' in title:
-        return ['MigrationNewAPI', 'RD']
     return ['RD']
 
 
