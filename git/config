@@ -112,6 +112,25 @@
         }; \
         \
         compareurl="$lefturl$middleurl/$righturl/compare/$tbranch...$rmiddleurl:$branch"; \
-        echo $compareurl; \
+        echo "Opening $compareurl"; \
         xdg-open "$compareurl";\
+    }; f"
+
+    # open the list of commits of the current branch on github
+    show-br = "!f() {\
+        branch=`git symbolic-ref -q --short HEAD`; \
+        remote=`git config branch.$branch.remote`; \
+        remote_url=`git config remote.$remote.url`; \
+        \
+        left_url=; \
+        middle_url=`echo $remote_url | cut -d ":" -f2 | cut -d "/" -f1`; \
+        right_url=`echo $remote_url | cut -d ":" -f2 | cut -d "/" -f2 | cut -d "." -f1`; \
+        is_ssh=`echo $remote_url | grep 'git@' | wc -l`; \
+        [ $is_ssh -eq 0 ] && { \
+            middle_url=`echo $remote_url | cut -d "/" -f4`; \
+            right_url=`echo $remote_url | cut -d "/" -f5 | cut -d "." -f1`; \
+        }; \
+        commit_url="https://github.com/$middle_url/$right_url/commits/$branch"; \
+        echo "Opening $commit_url"; \
+        xdg-open "$commit_url"; \
     }; f"
