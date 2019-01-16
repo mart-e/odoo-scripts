@@ -134,3 +134,23 @@
         echo "Opening $commit_url"; \
         xdg-open "$commit_url"; \
     }; f"
+
+    # open the last commit of the current branch on github
+    show-commit = "!f() {\
+        branch=`git symbolic-ref -q --short HEAD`; \
+        remote=`git config branch.$branch.remote`; \
+        remote_url=`git config remote.$remote.url`; \
+        commit_hash=`git rev-parse HEAD`; \
+        \
+        left_url=; \
+        middle_url=`echo $remote_url | cut -d ":" -f2 | cut -d "/" -f1`; \
+        right_url=`echo $remote_url | cut -d ":" -f2 | cut -d "/" -f2 | cut -d "." -f1`; \
+        is_ssh=`echo $remote_url | grep 'git@' | wc -l`; \
+        [ $is_ssh -eq 0 ] && { \
+            middle_url=`echo $remote_url | cut -d "/" -f4`; \
+            right_url=`echo $remote_url | cut -d "/" -f5 | cut -d "." -f1`; \
+        }; \
+        commit_url="https://github.com/$middle_url/$right_url/commit/$commit_hash"; \
+        echo "Opening $commit_url"; \
+        xdg-open "$commit_url"; \
+    }; f"
