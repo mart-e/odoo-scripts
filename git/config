@@ -95,7 +95,7 @@
         rmiddleurl=`echo $remoteurl | cut -d ":" -f2 | cut -d "/" -f1`; \
         isssh=`echo $remoteurl | grep 'git@' | wc -l`; \
         [ $isssh -eq 0 ] && { \
-            rmiddleurl=`echo $tremoteurl | cut -d "/" -f4`; \
+            rmiddleurl=`echo $remoteurl | cut -d "/" -f4`; \
         }; \
         \
         tremote=`echo $1 | cut -d "/" -f1`; \
