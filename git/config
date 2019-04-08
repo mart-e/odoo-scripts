@@ -60,7 +60,7 @@
         git fetch $remote $branch; \
         if [ -z $remotebranchpresent ]; then {  \
             git branch $branch $remote/$branch; \
-        } elif [[ "$remotebranchpresent" != "$remote" ]]; then {  \
+        } elif [ "$remotebranchpresent" != "$remote" ]; then {  \
             echo "! Branch $branch already present localy with a different remote than $remote"; \
             echo "! Creating a local branch $branch-$remote with a different name than the remote."; \
             echo "! Use \"git push $remote $branch-$remote:$branch\" to push in it."; \
