@@ -32,16 +32,16 @@
         \
         localbranch=`git symbolic-ref -q --short HEAD`; \
         localremote=`git config branch.$localbranch.remote`; \
-        [ -z $localremote ] && { \
+        if [ -z $localremote ]; then { \
             echo "Branch $localbranch is not linked to any remote, can not guess the URL for the remote $remote."; \
             echo "Set a remote or switch to the current branch."; \
             exit; \
-        }; \
+        } fi; \
         \
         localurl=`git config remote.$localremote.url`; \
         \
         remoteurlpresent=`git config remote.$remote.url`; \
-        [ -z $remoteurlpresent ] && {  \
+        if [ -z $remoteurlpresent ]; then {  \
             \
             lefturl='git@github.com:'; \
             righturl=`echo $localurl | cut -d "/" -f2`; \
@@ -49,13 +49,13 @@
             isssh=`echo $localurl | grep 'git@' | wc -l`; \
             [ $isssh -eq 0 ] && { \
                 lefturl='https://github.com/'; \
-                righturl=`echo $url | cut -d "/" -f5`; \
+                righturl=`echo $localurl | cut -d "/" -f5`; \
             }; \
             \
             newurl="$lefturl$remote/$righturl"; \
             git remote add $remote "$newurl"; \
             \
-        }; \
+        } fi; \
         remotebranchpresent=`git config branch.$branch.remote`; \
         git fetch $remote $branch; \
         if [ -z $remotebranchpresent ]; then {  \
