@@ -77,10 +77,10 @@
         remote=`echo $1 | cut -d ":" -f1`; \
         branch=`echo $1 | cut -d ":" -f2`; \
         current=`git symbolic-ref -q --short HEAD`; \
-        [[ "$current" == "$branch" ]] && {  \
+        if [ "$current" = "$branch" ]; then {  \
             echo "Checkout in a different branch before removing $branch"; \
             exit;  \
-        }; \
+        } fi; \
         git branch -D $branch; \
         git remote remove $remote; \
     }; f"
