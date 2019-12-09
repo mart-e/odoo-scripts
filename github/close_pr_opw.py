@@ -77,7 +77,7 @@ _This is an automated message._
 This issue is linked to an Odoo support ticket that has been closed.
 We hope you got an answer to your issue.
 
-If you believe the answer is not yet solved and would like to keep this issue open, please let us know to reopen it.
+If you believe the problem is not solved yet and would like to keep this issue open, please let us know to reopen it.
 """
 
     return f"""Dear @{info['user']['login']},
@@ -86,7 +86,7 @@ _This is an automated message._
 This issue is linked to the Odoo support ticket opw-{issue['id']} that has been closed.
 We hope you got an answer to your issue.
 
-If you believe the answer is not yet solved and would like to keep this issue open, please let us know to reopen it.
+If you believe the problem is not solved yet and would like to keep this issue open, please let us know to reopen it.
 """
 
 def post_message(message, info):
@@ -109,10 +109,10 @@ def close_issue(info):
 
 def close_opw_pr(pr_opws):
     issues = investigate_odoo_com(list(pr_opws))
-
+    cpt = 0
     for issue in issues:
         pr_number = pr_opws[issue['id']]
-        if issue['stage_id'][1] != 'Done':
+        if issue['stage_id'][1] not in ['Done', 'Cancelled', 'Cancelled (PS)']:
             print(f"Skip {REPO}#{pr_number} as opw-{issue['id']} in state {issue['stage_id'][1]}")
             continue
 
@@ -126,8 +126,19 @@ def close_opw_pr(pr_opws):
             print(f"Skip {REPO}#{pr_number} as in state {info['state']}")
             continue
 
+        print(f"Issue {REPO}#{pr_number} (opw-{issue['id']}) to be closed")
+        cpt += 1
         msg = get_closing_message(info, issue)
         post_message(msg, info)
         close_issue(info)
+    print(cpt)
 
-close_opw_pr(OPW_TO_PR)
+def search_opw_pr():
+    prs = rget(PULLS_URL, params={'filter': 'OPW'}).json()
+    for pr in prs:
+        print(pr['number'])
+        print(pr['body'])
+        print()
+
+# close_opw_pr(OPW_TO_PR)
+search_opw_pr()
