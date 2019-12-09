@@ -154,3 +154,6 @@
         echo "Opening $commit_url"; \
         xdg-open "$commit_url"; \
     }; f"
+
+    find = log --pretty=\"format:%Cgreen%H %Cblue%s\" --name-status --grep
+    pushf = push --force-with-lease
