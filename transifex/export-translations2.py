@@ -5,6 +5,7 @@
 import argparse
 import base64
 import getpass
+import polib
 
 import xmlrpc.client as xmlrpclib
 import os
@@ -27,9 +28,11 @@ THEME_TXPATH = e('~/odoo/design-themes/.tx/config')
 l = glob.glob(os.path.join(ADDONS_PATH, '*/__init__.py'))
 # without 'web' as is in enterprise and breaks if more than one 'theme_'
 ADDONS_1 = [os.path.basename(os.path.dirname(i)) for i in l if (
-    # 'l10n_' not in i and
-    'theme_' not in i and
-    'hw_' not in i
+    'l10n_' not in i and
+    # 'theme_' not in i and
+    'hw_' not in i and
+    'test' not in i
+# )]
 )] + ['base']
 ADDONS_2 = [os.path.basename(os.path.dirname(i)) for i in l if (
     # 'l10n_' in i and
@@ -44,7 +47,10 @@ l = glob.glob(os.path.join(ENT_ADDONS_PATH, '*/__init__.py'))
 ENT_ADDONS_1 = [os.path.basename(os.path.dirname(i)) for i in l if (
     'l10n_' not in i and
     'theme_' not in i and
-    os.path.basename(os.path.dirname(i)) != 'pos_blackbox_be'
+    'hr_contract_salary' not in i and
+    'pos_blackbox_be' not in i and
+    'account_winbooks_import' not in i
+    # os.path.basename(os.path.dirname(i)) != 'pos_blackbox_be'
 )]
 ENT_ADDONS_2 = [os.path.basename(os.path.dirname(i)) for i in l if (
     'l10n_' in i and
@@ -57,7 +63,6 @@ ENT_ADDONS_3 = [os.path.basename(os.path.dirname(i)) for i in l if ('l10n_be' in
 
 l = glob.glob(os.path.join(THEME_PATH, '*/__init__.py'))
 THEME_ADDONS_1 = [os.path.basename(os.path.dirname(i)) for i in l]
-
 
 MODULES_TO_EXPORT = []
 
@@ -94,14 +99,24 @@ source_lang = en
         prepath = 'addons/'
 
     for m in modules:
-        if m.startswith('l10n_') or m.startswith('hw_'):
+        if (m.startswith('l10n_') and m != 'l10n_multilang') or \
+                m.startswith('hw_') or m.startswith('test_') or m.endswith('_test'):
             continue
+        fname = "%s%s/i18n/%s.pot" % (prepath, m, m)
+        if not os.path.exists(fname):
+            continue
+
+        print(f"Generate tx for {fname}")
+        p = polib.pofile(fname)
+        if not len(p):
+            continue
+
         configf.write("""[%s.%s]
 file_filter = %s%s/i18n/<lang>.po
-source_file = %s%s/i18n/%s.pot
+source_file = %s
 source_lang = en
 
-""" % (project, m, prepath, m, prepath, m, m))
+""" % (project, m, prepath, m, fname))
 
     configf.close()
 
@@ -114,7 +129,7 @@ def install_modules(modules, db, username, password):
     models = xmlrpclib.ServerProxy('{}/xmlrpc/2/object'.format(url))
 
     module_ids = models.execute_kw(db, uid, password, 'ir.module.module', 'search',  [[
-        ('name', 'like', 'theme_'), ('name', '!=', 'theme_common'), ('name', 'not in', modules)]])
+        ('name', 'like', 'theme_'), ('name', '!=', 'theme_common'), ('name', 'not in', modules), ('state', '!=', 'uninstalled')]])
     if module_ids:
         models.execute_kw(db, uid, password, 'ir.module.module', 'button_immediate_uninstall',  [module_ids])
 
@@ -150,6 +165,7 @@ def export_terms(modules, addons_path, db, username, password):
     for module in modules:
         m_id = module['id']
         m_name = module['name']
+
         print("Export module %s" % m_name)
         export_id = models.execute_kw(db, uid, password, 'base.language.export', 'create',  [{
             'lang': '__new__',
@@ -191,7 +207,7 @@ def export_terms(modules, addons_path, db, username, password):
 
 # generate_tx_config(ADDONS_PATH, TXPATH, 'odoo-11')
 # generate_tx_config(ENT_ADDONS_PATH, ENT_TXPATH, 'odoo-11')
-# generate_tx_config(THEME_PATH, THEME_TXPATH, 'odoo-10-theme')
+# generate_tx_config(THEME_PATH, THEME_TXPATH, 'odoo-11-theme')
 
 # for i, modules_list in enumerate(MODULES_TO_EXPORT):
 #     incompatible = False
@@ -220,7 +236,7 @@ if __name__ == '__main__':
                         help='user account, default \'admin\'')
     parser.add_argument('-p', '--password',
                         help='password of the user, default \'admin\', using prompt if login but no user is specified')
-    parser.add_argument('-m', '--modules', required=True,
+    parser.add_argument('-m', '--modules',
                         help='the list of modules to install and export, comma separated')
     parser.add_argument('-P', '--project',
                         help='export Transifex configuration file for the following project')
@@ -235,16 +251,24 @@ if __name__ == '__main__':
         args.password = getpass.getpass(f"Password for user {args.login}: ")
 
     if args.modules == 'community':
-        modules = ADDONS_1
+        modules = ADDONS_1[:-1]  # remove base
     elif args.modules == 'enterprise':
         modules = ENT_ADDONS_1
+    elif args.modules == 'theme':
+        modules = THEME_ADDONS_1
     else:
-        modules = args.modules.split(',')
+        modules = (args.modules or '').split(',')
 
     modules_per_path = [(list(set(path) & set(modules)), p, tp)
                         for path, p, tp in [
                             (ADDONS_1, ADDONS_PATH, TXPATH),
-                            (ENT_ADDONS_1, ENT_ADDONS_PATH, ENT_TXPATH)]
+                            (ENT_ADDONS_1, ENT_ADDONS_PATH, ENT_TXPATH),
+                            (ADDONS_2, ADDONS_PATH, TXPATH),
+                            (ENT_ADDONS_2, ENT_ADDONS_PATH, ENT_TXPATH),
+                            (ADDONS_3, ADDONS_PATH, TXPATH),
+                            (THEME_ADDONS_1, THEME_PATH, THEME_TXPATH),
+                            ]
+
                        ]
 
     for modules_list, addons_path, txpath in modules_per_path:
@@ -253,6 +277,14 @@ if __name__ == '__main__':
 
         if args.project:
             generate_tx_config(addons_path, txpath, args.project)
-        if args.install:
-            install_modules(modules_list, args.database, args.login, args.password)
-        export_terms(modules_list, addons_path, args.database, args.login, args.password)
+            continue
+
+        if args.modules == 'theme':
+            for module in modules_list:
+                if args.install:
+                    install_modules([module], args.database, args.login, args.password)
+                export_terms([module], addons_path, args.database, args.login, args.password)
+        else:
+            if args.install:
+                install_modules(modules_list, args.database, args.login, args.password)
+            export_terms(modules_list, addons_path, args.database, args.login, args.password)
