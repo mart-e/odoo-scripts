@@ -90,6 +90,10 @@ def list_pr(url, version='7.0'):
             'user': pull['user']['login'],
             'state': pull['state'],
             'number': pull['number'],
+            'base': pull['base']['ref'],
+            'author_association': pull['author_association'],
+            'assignee': pull['assignee'],
+            'updated_at': pull['updated_at'],
         }
 
         if full_name == DEV_REPO:
@@ -137,6 +141,10 @@ def tag_prs(url):
             'user': pull['user']['login'],
             'state': pull['state'],
             'number': pull['number'],
+            'base': pull['base']['ref'],
+            'author_association': pull['author_association'],
+            'assignee': pull['assignee'],
+            'updated_at': pull['updated_at'],
         }
 
         if full_name == DEV_REPO:
@@ -159,6 +167,16 @@ def tag_prs(url):
         return res.links['next']['url']
     return False
 
+def stats_per_branches():
+    with open(PR_FILE, 'r') as f:
+        stats = json.load(f)
+
+    branches = {}
+    for pr in stats.values():
+        br = pr['base']
+        branches.setdefault(br, 0)
+        branches[br] += 1
+    print(branches)
 
 if os.path.isfile(PR_FILE):
     with open(PR_FILE, 'r') as f:
