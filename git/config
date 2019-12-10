@@ -135,12 +135,15 @@
         xdg-open "$commit_url"; \
     }; f"
 
-    # open the last commit of the current branch on github
+    # open the given or last commit of the current branch on github
     show-commit = "!f() {\
         branch=`git symbolic-ref -q --short HEAD`; \
         remote=`git config branch.$branch.remote`; \
         remote_url=`git config remote.$remote.url`; \
-        commit_hash=`git rev-parse HEAD`; \
+        commit_hash=$1; \
+        [ -z $commit_hash ] && { \
+            commit_hash=`git rev-parse HEAD`; \
+        }; \
         \
         left_url=; \
         middle_url=`echo $remote_url | cut -d ":" -f2 | cut -d "/" -f1`; \
