@@ -234,7 +234,7 @@ def tag_prs(url):
             # not already tagged with an app label
             if not(set(label_names) & set(APP_LABELS_NAMES)):
                 labels = guess_app_labels(pr_number)
-                if labels:
+                if labels and set(labels) != set(current_labels):
                     mark_label(pr_number, labels)
 
     with open(PR_FILE, 'w') as f:
