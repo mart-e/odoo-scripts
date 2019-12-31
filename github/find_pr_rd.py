@@ -94,10 +94,11 @@ def guess_app_labels(pr_number):
     matched_regex, matched_label = False, False
 
     # make a first pass on cla as compatible with other tags
-    for file_info in all_files:
+    for idx, file_info in enumerate(all_files):
         filename = file_info['filename']
         if filename.startswith("doc/cla"):
             labels.append(CLA_LABEL)
+            all_files = all_files[:idx] + all_files[idx+1:]
             break
 
     for file_info in all_files:
