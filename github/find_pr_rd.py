@@ -2,6 +2,7 @@
 
 import json
 import os
+import re
 import sys
 import requests
 
@@ -24,9 +25,28 @@ else:
 
 PULLS_URL = "%s/%s/pulls" % (BASE_URL, REPO)
 LABELS_URL = "%s/%s/issues/%%s/labels" % (BASE_URL, REPO)
+FILES_URL = "%s/%s/pulls/%%s/files" % (BASE_URL, REPO)
 COMMENT_URL = "%s/%s/issues/%%s/comments" % (BASE_URL, REPO)
 IGNORED_LABELS = ['8.0', '9.0', '10.0', '11.0', '12.0']
 TARGET_LABEL = ['RD', 'OE']
+CLA_LABEL = "CLA"
+APP_LABELS = [
+    ("^addons/account.*", "Accounting"),
+    (".*\.po$", "Internationalization"),
+    ("^addons/mail/.*", "Discuss"),
+    ("^addons/hr.*", "HR"),
+    ("^addons/l10n_.*", "Localization"),
+    ("^addons/stock.*", "Logistics"),
+    ("^addons/mrp.*", "Logistics"),
+    ("^addons/crm.*", "Marketing"),
+    ("^addons/event.*", "Marketing"),
+    ("^addons/point_of_sale/.*", "Point of Sale"),
+    ("^addons/pos_.*", "Point of Sale"),
+    ("^addons/sale.*", "Sales"),
+    ("^addons/payment.*", "Sales"),
+    ("^addons/website.*", "Website"),
+]
+APP_LABELS_NAMES = [app[1] for app in APP_LABELS]
 
 total = 0
 
@@ -58,6 +78,48 @@ def guess_best_labels(pull):
         'opw' in body:
         return ['OE']
     return ['RD']
+
+def guess_app_labels(pr_number):
+    files_url = FILES_URL % pr_number
+    # TODO pagination?
+    all_files = rget(files_url).json()
+    labels = []
+    matched_regex, matched_label = False, False
+
+    # make a first pass on cla as compatible with other tags
+    for file_info in all_files:
+        filename = file_info['filename']
+        if filename.startswith("doc/cla"):
+            labels.append(CLA_LABEL)
+            break
+
+    for file_info in all_files:
+        filename = file_info['filename']
+        if matched_regex:
+            if not re.match(matched_regex, filename):
+                # not full match, give up
+                return labels
+            # still matching, next file
+            continue
+
+        # several regex may match the same label, needs to check all
+        for regex, label in APP_LABELS:
+            if re.match(regex, filename):
+                if not matched_label:
+                    matched_label = label
+                    break
+                elif matched_label == label:
+                    # still matching, next file
+                    break
+                else:
+                    # not full match, give up
+                    return labels
+        else:
+            # made 0 match, better not tag anything
+            return labels
+    if matched_label:
+        labels.append(matched_label)
+    return labels
 
 
 def mark_label(pr_number, labels):
@@ -147,18 +209,25 @@ def tag_prs(url):
             'updated_at': pull['updated_at'],
         }
 
+        label_url = LABELS_URL % pr_number
+        current_labels = rget(label_url).json()
+        pr_info[pr_number]['labels'] = current_labels
+        label_names = current_labels and [l['name'] for l in current_labels] or []
+        if not label_names:
+            continue
+        print("#%s (%s): %s" % (pull['number'], total, pull['title']))
+        total += 1
         if full_name == DEV_REPO:
-            total += 1
-            print("#%s (%s): %s" % (pull['number'], total, pull['title']))
-
-            label_url = LABELS_URL % pr_number
-            labels = rget(label_url).json()
-            pr_info[pr_number]['labels'] = labels
-            label_names = labels and [l['name'] for l in labels] or []
-            # no label or none of the targetted ones
-            if not label_names or not (set(label_names) & set(TARGET_LABEL)):
+            # not already tagged with R&D or OE
+            if not (set(label_names) & set(TARGET_LABEL)):
                 labels = guess_best_labels(pull)
                 mark_label(pr_number, labels)
+        else:
+            # not already tagged with an app label
+            if not(set(label_names) & set(APP_LABELS_NAMES)):
+                labels = guess_app_labels(pr_number)
+                if labels:
+                    mark_label(pr_number, labels)
 
     with open(PR_FILE, 'w') as f:
         json.dump(pr_info, f)
