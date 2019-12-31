@@ -35,7 +35,12 @@ APP_LABELS = [
     (".*\.po$", "Internationalization"),
     ("^addons/mail/.*", "Discuss"),
     ("^addons/hr.*", "HR"),
+    ("^hr_.*", "HR"),
+    ("^addons/fleet/.*", "HR"),
+    ("^l10n_.*_hr_payroll/.*", "HR"),
+    ("^industry_fsm.*_hr_payroll/.*", "HR"),
     ("^addons/l10n_.*", "Localization"),
+    ("^l10n_.*", "Localization"),
     ("^addons/stock.*", "Logistics"),
     ("^addons/mrp.*", "Logistics"),
     ("^addons/crm.*", "Marketing"),
@@ -81,7 +86,7 @@ def guess_best_labels(pull):
 
 def guess_app_labels(pr_number):
     files_url = FILES_URL % pr_number
-    # TODO pagination?
+    # don't use pagination but if more than 20 files, probably not worth tagging anyway
     all_files = rget(files_url).json()
     labels = []
     matched_regex, matched_label = False, False
