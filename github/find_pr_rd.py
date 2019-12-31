@@ -32,6 +32,7 @@ TARGET_LABEL = ['RD', 'OE']
 CLA_LABEL = "CLA"
 APP_LABELS = [
     (r"^addons/account.*", "Accounting"),
+    (r"^account_.*", "Accounting"),
     (r".*\.po$", "Internationalization"),
     (r"^addons/mail/.*", "Discuss"),
     (r"^addons/hr.*", "HR"),
@@ -43,13 +44,19 @@ APP_LABELS = [
     (r"^l10n_.*", "Localization"),
     (r"^addons/stock.*", "Logistics"),
     (r"^addons/mrp.*", "Logistics"),
+    (r"^stock_.*", "Logistics"),
+    (r"^delivery_.*", "Logistics"),
     (r"^addons/crm.*", "Marketing"),
     (r"^addons/event.*", "Marketing"),
+    (r"^event_.*", "Marketing"),
     (r"^addons/point_of_sale/.*", "Point of Sale"),
     (r"^addons/pos_.*", "Point of Sale"),
     (r"^addons/sale.*", "Sales"),
+    (r"^sale_.*", "Sales"),
     (r"^addons/payment.*", "Sales"),
     (r"^addons/website.*", "Website"),
+    (r"^website_.*", "Website"),
+    (r"^web_studio/.*", "Studio"),
     (r"^odoo/(models|fields).py", "ORM"),
     (r"^odoo/osv/.*", "ORM"),
 ]
