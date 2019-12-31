@@ -227,21 +227,21 @@ def tag_prs(url):
         label_url = LABELS_URL % pr_number
         current_labels = rget(label_url).json()
         pr_info[pr_number]['labels'] = current_labels
-        label_names = current_labels and [l['name'] for l in current_labels] or []
-        if not label_names:
+        current_label_names = current_labels and [l['name'] for l in current_labels] or []
+        if not current_label_names:
             continue
         print("#%s (%s): %s" % (pull['number'], total, pull['title']))
         total += 1
         if full_name == DEV_REPO:
             # not already tagged with R&D or OE
-            if not (set(label_names) & set(TARGET_LABEL)):
+            if not (set(current_label_names) & set(TARGET_LABEL)):
                 labels = guess_best_labels(pull)
                 mark_label(pr_number, labels)
         else:
             # not already tagged with an app label
-            if not(set(label_names) & set(APP_LABELS_NAMES)):
+            if not(set(current_label_names) & set(APP_LABELS_NAMES)):
                 labels = guess_app_labels(pr_number)
-                if labels and set(labels) != set(current_labels):
+                if labels and set(labels) != set(current_label_names):
                     mark_label(pr_number, labels)
 
     with open(PR_FILE, 'w') as f:
