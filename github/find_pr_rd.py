@@ -48,6 +48,7 @@ APP_LABELS = [
     (r"^delivery_.*", "Logistics"),
     (r"^addons/crm.*", "Marketing"),
     (r"^addons/event.*", "Marketing"),
+    (r"^addons/website_slides.*", "Marketing"),
     (r"^event_.*", "Marketing"),
     (r"^helpdesk.*", "Marketing"),
     (r"^addons/point_of_sale/.*", "Point of Sale"),
@@ -62,8 +63,6 @@ APP_LABELS = [
     (r"^odoo/osv/.*", "ORM"),
 ]
 APP_LABELS_NAMES = [app[1] for app in APP_LABELS]
-
-total = 0
 
 AUTH = HTTPBasicAuth(os.getenv('GITHUB_USERNAME'), os.getenv('GITHUB_PASSWORD'))
 
@@ -144,59 +143,9 @@ def mark_label(pr_number, labels):
     res = rpost(label_url, labels)
     return res.status_code
 
-def list_pr(url, version='7.0'):
-    global total
-    global pr_info
-
-    print("Get PR: %s" % url)
-    res = rget(url, params={'state':'open'})
-    skip = True
-    for pull in res.json():
-        pr_number = str(pull['number'])
-
-        if pr_info.get(pr_number):
-            continue
-        skip = False
-
-        full_name = pull['head']['repo'] and pull['head']['repo']['full_name'] or 'unknown repository'
-        pr_info[pr_number] = {
-            'head': pull['head'],
-            'number': pull['number'],
-            'title': pull['title'],
-            'url': pull['url'],
-            'full_name': full_name,
-            'user': pull['user']['login'],
-            'state': pull['state'],
-            'number': pull['number'],
-            'base': pull['base']['ref'],
-            'author_association': pull['author_association'],
-            'assignee': pull['assignee'],
-            'updated_at': pull['updated_at'],
-        }
-
-        if full_name == DEV_REPO:
-            total += 1
-            print("#%s (%s): %s" % (pull['number'], total, pull['title']))
-
-            label_url = LABELS_URL % pr_number
-            labels = rget(label_url).json()
-            label_names = labels and [l['name'] for l in labels] or []
-            pr_info[pr_number]['labels'] = labels
-            # no label or none of the targetted ones
-            if not label_names or not (set(label_names) & set(TARGET_LABEL)):
-                labels = guess_best_labels(pull)
-                mark_label(pr_number, labels)
-
-    with open(PR_FILE, 'w') as f:
-        json.dump(pr_info, f)
-
-    if not skip and res.links.get('next'):
-        return res.links['next']['url']
-    return False
 
 
 def tag_prs(url):
-    global total
     global pr_info
 
     print("Get PR: %s" % url)
@@ -231,8 +180,7 @@ def tag_prs(url):
         current_label_names = current_labels and [l['name'] for l in current_labels] or []
         if not current_label_names:
             continue
-        print("#%s (%s): %s" % (pull['number'], total, pull['title']))
-        total += 1
+        print("#%s: %s" % (pull['number'], pull['title']))
         if full_name == DEV_REPO:
             # not already tagged with R&D or OE
             if not (set(current_label_names) & set(TARGET_LABEL)):
