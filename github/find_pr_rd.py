@@ -31,6 +31,8 @@ IGNORED_LABELS = ['8.0', '9.0', '10.0', '11.0', '12.0']
 TARGET_LABEL = ['RD', 'OE']
 CLA_LABEL = "CLA"
 APP_LABELS = [
+    (r"^requirements.txt", "Packaging"),
+    (r"^debian/.*", "Packaging"),
     (r"^addons/account.*", "Accounting"),
     (r"^account_.*", "Accounting"),
     (r".*\.po$", "Internationalization"),
