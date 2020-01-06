@@ -28,7 +28,7 @@ THEME_TXPATH = e('~/odoo/design-themes/.tx/config')
 l = glob.glob(os.path.join(ADDONS_PATH, '*/__init__.py'))
 # without 'web' as is in enterprise and breaks if more than one 'theme_'
 ADDONS_1 = [os.path.basename(os.path.dirname(i)) for i in l if (
-    'l10n_' not in i and
+    # 'l10n_' not in i and
     # 'theme_' not in i and
     'hw_' not in i and
     'test' not in i
@@ -49,8 +49,7 @@ ENT_ADDONS_1 = [os.path.basename(os.path.dirname(i)) for i in l if (
     'theme_' not in i and
     'hr_contract_salary' not in i and
     'pos_blackbox_be' not in i and
-    'account_winbooks_import' not in i
-    # os.path.basename(os.path.dirname(i)) != 'pos_blackbox_be'
+    os.path.basename(os.path.dirname(i)) != 'sale_ebay'
 )]
 ENT_ADDONS_2 = [os.path.basename(os.path.dirname(i)) for i in l if (
     'l10n_' in i and
@@ -99,6 +98,8 @@ source_lang = en
         prepath = 'addons/'
 
     for m in modules:
+        if m == "theme_bootswatch":
+            import pudb;pu.db
         if (m.startswith('l10n_') and m != 'l10n_multilang') or \
                 m.startswith('hw_') or m.startswith('test_') or m.endswith('_test'):
             continue
@@ -133,7 +134,7 @@ def install_modules(modules, db, username, password):
     if module_ids:
         models.execute_kw(db, uid, password, 'ir.module.module', 'button_immediate_uninstall',  [module_ids])
 
-    module_ids = models.execute_kw(db, uid, password, 'ir.module.module', 'search',  [[('name', 'in', modules)]])
+    module_ids = models.execute_kw(db, uid, password, 'ir.module.module', 'search',  [[('name', 'in', modules), ('state', '!=', 'installed')]])
     print("module_ids", module_ids)
     if module_ids:
         models.execute_kw(db, uid, password, 'ir.module.module', 'button_immediate_install',  [module_ids])

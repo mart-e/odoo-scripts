@@ -64,6 +64,7 @@ APP_LABELS = [
     (r"^addons/web/static/src/js/.*", "Framework"),
     (r"^web_studio/.*", "Studio"),
     (r"^odoo/(models|fields).py", "ORM"),
+    (r"^odoo/addons/base/models/ir_.*.py", "ORM"),
     (r"^odoo/osv/.*", "ORM"),
 ]
 APP_LABELS_NAMES = [app[1] for app in APP_LABELS]

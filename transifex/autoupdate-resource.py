@@ -12,22 +12,22 @@ load_dotenv(find_dotenv())
 APISERVER = "https://api.transifex.com"
 ORGANIZATION = "odoo"
 PROJECT_NAME = "odoo-13"
-PROJECT_NAME = "odoo-12-doc"
-PATH_TO_ADDONS = "/home/mat/odoo/odoo/addons"
+PROJECT_NAME = "odoo-master"
 PATH_TO_ADDONS = "/home/mat/odoo/documentation-user"
+PATH_TO_ADDONS = "/home/mat/odoo/odoo/addons"
 PATH_TO_ENT = "/home/mat/odoo/enterprise"
 
-VERSION = "12.0"
-RAW_URL = "https://raw.githubusercontent.com/%s/odoo/%s/addons/{module}/i18n/{module}.pot" % (ORGANIZATION, VERSION)
+VERSION = "saas-13.1"
 RAW_URL = "https://raw.githubusercontent.com/%s/documentation-user/%s/locale/sources/{module}.pot" % (ORGANIZATION, VERSION)
+RAW_URL = "https://raw.githubusercontent.com/%s/odoo/%s/addons/{module}/i18n/{module}.pot" % (ORGANIZATION, VERSION)
 
 CSRFTOKEN = os.getenv('TRANSIFEX_CSRFTOKEN')
 SESSIONID = os.getenv('TRANSIFEX_SESSIONID')
 TRANSIFEX_USERNAME = os.getenv('TRANSIFEX_USERNAME')
-TRANSIFEX_PASSWORD = os.getenv('TRANSIFEX_PASSWORD')
+# TRANSIFEX_PASSWORD = os.getenv('TRANSIFEX_PASSWORD')
 APITOKEN = os.getenv('TRANSIFEX_APITOKEN')
 
-AUTH = (TRANSIFEX_USERNAME, TRANSIFEX_PASSWORD)
+# AUTH = (TRANSIFEX_USERNAME, TRANSIFEX_PASSWORD)
 AUTH = ('api', APITOKEN)
 HEADERS = {
     'Content-type': 'application/json'

@@ -112,9 +112,9 @@ def is_outdated(info, recheck=False):
         return False
     if info['author_association'] not in ['CONTRIBUTOR', 'FIRST_TIME_CONTRIBUTOR']:
         print(f"...Skip #{info['number']} by a {info['author_association']}")
-    if info['assignee']:
-        print(f"...Skip #{info['number']} as assigned to {info['assignee']['login']}")
-        return False
+    # if info['assignee']:
+    #     print(f"...Skip #{info['number']} as assigned to {info['assignee']['login']}")
+    #     return False
 
     res = False
     if 'comments' not in info:
@@ -134,9 +134,9 @@ def is_outdated(info, recheck=False):
             info['state'] = res['state']
             return False
 
-    if res['updated_at'] > (datetime.now() - timedelta(days=500)).isoformat():
-        print(f"...Skip #{info['number']} as last updated {info['updated_at']}")
-        return False
+    # if res['updated_at'] > (datetime.now() - timedelta(days=100)).isoformat():
+    #     print(f"...Skip #{info['number']} as last updated {info['updated_at']}")
+    #     return False
 
     print(f"Going to close PR #{info['number']} by @{info['user']['login']} targetting {info['base']}, last updated at {info['updated_at']}")
     return True
@@ -175,7 +175,7 @@ def close_issue(info):
 def close_outdated_pr():
     total = 0
     global pr_info
-    for pr_number, info in pr_info.items():
+    for info in pr_info.values():
         if is_outdated(info, recheck=True):
             # print(f"Could close {info['number']}")
             msg = get_closing_message(info)
@@ -194,4 +194,4 @@ else:
 res = list_pr(PULLS_URL, version='10.0')
 while res:
     res = list_pr(res, version='10.0')
-close_outdated_pr()
+# close_outdated_pr()
