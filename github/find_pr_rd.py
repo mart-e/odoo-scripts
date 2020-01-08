@@ -50,7 +50,7 @@ APP_LABELS = [
     (r"^delivery_.*", "Logistics"),
     (r"^addons/crm.*", "Marketing"),
     (r"^addons/event.*", "Marketing"),
-    (r"^addons/crm.*", "Marketing"),
+    (r"^addons/mass_mailing.*", "Marketing"),
     (r"^addons/website_slides.*", "Marketing"),
     (r"^event_.*", "Marketing"),
     (r"^helpdesk.*", "Marketing"),
