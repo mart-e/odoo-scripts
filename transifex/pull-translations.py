@@ -3,13 +3,82 @@
 
 import argparse
 import os
+import re
 import subprocess
 from datetime import datetime
+from pathlib import Path
 
+import polib
+
+REGEX = re.compile(
+    "%(\(\w+\)|)([0+-]|)(\d+|\*|)[diouxXcrsa]|%(\(\w+\)|)([0+-]|)(\d+|\*|)(\.(\d+|\*|)|)[eEfFgG]|%%"
+)
 PULL_ARGS = [
     '--skip',
     # '--minimum-perc', '10',
 ]
+
+def sanitize_pofile(po_path):
+    po = polib.pofile(po_path)
+    save = False
+    for entry in po:
+        rfrom, rto = False, False
+        placeholders_src = sorted(
+            [m.group(0) for m in REGEX.finditer(entry.msgid)]
+        )
+        placeholders_trans = sorted(
+            [m.group(0) for m in REGEX.finditer(entry.msgstr)]
+        )
+        if entry.msgstr and placeholders_src != placeholders_trans:
+            # placeholders present in source but not in translation
+            missing_src = set(placeholders_src) - set(placeholders_trans)
+            # placeholders present in translation but not in source
+            added_trans = set(placeholders_trans) - set(placeholders_src)
+            if len(missing_src) == 1 and len(added_trans) == 1:
+                # just one is missing
+                rfrom = added_trans.pop()
+                rto = missing_src.pop()
+                print(f"Bad translation rfixed {po_path} :\n\t{rfrom} -> {rto}")
+            else:
+                if "%s" in entry.msgid and "%s" not in entry.msgstr:
+                    if "% s" in entry.msgstr:
+                        if " %s" in entry.msgid:
+                            rfrom, rto = "% s", " %s"
+                        elif "%s " in entry.msgid:
+                            rfrom, rto = "% s", "%s "
+                        else:
+                            rfrom, rto = "% s", "%s"
+                    elif "%S" in entry.msgstr:
+                        rfrom = "%S"
+                    elif "S%" in entry.msgstr:
+                        rfrom = "S%"
+                    elif "s%" in entry.msgstr:
+                        rfrom = "s%"
+                    elif "%s" in entry.msgid and "%" in entry.msgstr:
+                        rfrom = "%"
+                        rto = "%s"
+                    elif entry.msgid.startswith("%s"):
+                        rfrom = entry.msgstr
+                        rto = "%s " + rfrom
+                    elif entry.msgid.endswith("%s"):
+                        rfrom = entry.msgstr
+                        rto = rfrom + " %s"
+                    else:
+                        rfrom, rto = entry.msgstr, ""
+                else:
+                    print(
+                        f"Potential bad translation? in {po_path} :\n\t{entry.msgid[:100]}\n\t{entry.msgstr[:100]}"
+                    )
+
+        if rfrom:
+            print(
+                f"Bad translation in {po_path} :\n\t{entry.msgid[:100]}\n\t{entry.msgstr[:100]}"
+            )
+            entry.msgstr = entry.msgstr.replace(rfrom, rto)
+            save = True
+
+    if save:
+        po.save()
 
 
 # path_to_tx = len(sys.argv) > 1 and sys.argv[1] or utils.find_dot_tx()
@@ -39,15 +108,20 @@ def commit_translations(code_path, commit=False, push=False):
     """Reset the code in :code_path: on current remote and push the new translations"""
     os.chdir(code_path)
     msg = "[I18N] Update translation terms from Transifex"
-    branch = subprocess.check_output('git symbolic-ref -q --short HEAD', shell=True).replace('\n', '')  # branch name
-    remote = subprocess.check_output(['git', 'config', 'branch.%s.remote' % branch]).replace('\n', '')  # remote name
-    print("Working with to %s/%s" % (remote, branch))
     if commit:
+        branch = subprocess.check_output('git symbolic-ref -q --short HEAD', shell=True, text=True).replace('\n', '')  # branch name
+        remote = subprocess.check_output(['git', 'config', 'branch.%s.remote' % branch], text=True).replace('\n', '')  # remote name
+        print("Working with to %s/%s" % (remote, branch))
+        
         # make have same code as remote
         subprocess.call(['git', 'fetch', remote, branch])
         subprocess.call(['git', 'reset', '%s/%s' % (remote, branch), '--hard'])
 
     pull_project_translation(code_path)
+    res = subprocess.run("""git status --short | grep '.po' | grep  -v "^??" | sed 's/^ M *//' | sed 's/^?? *//'""", shell=True, capture_output=True, text=True)
+    for pofile in res.stdout.split('\n'):
+        if pofile:
+            sanitize_pofile(pofile)
 
     if commit:
         # add new files
