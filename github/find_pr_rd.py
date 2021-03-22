@@ -58,7 +58,7 @@ APP_LABELS = [
     (r"^addons/pos_.*", "Point of Sale"),
     (r"^addons/sale.*", "Sales"),
     (r"^sale_.*", "Sales"),
-    (r"^addons/payment.*", "Sales"),
+    (r"^addons/payment.*", "Payment"),
     (r"^addons/website.*", "Website"),
     (r"^website_.*", "Website"),
     (r"^addons/web/static/src/js/.*", "Framework"),
@@ -69,11 +69,9 @@ APP_LABELS = [
 ]
 APP_LABELS_NAMES = [app[1] for app in APP_LABELS]
 
-AUTH = HTTPBasicAuth(os.getenv('GITHUB_USERNAME'), os.getenv('GITHUB_PASSWORD'))
-
 
 def rget(url, **kw):
-    res = requests.get(url, auth=AUTH, **kw)
+    res = requests.get(url, headers={'Authorization': 'token '+os.getenv('GITHUB_TOKEN')}, **kw)
     if res.headers.get('x-ratelimit-remaining') == '0':
         print("Hit rate limit!")
         return None
@@ -81,7 +79,7 @@ def rget(url, **kw):
 
 
 def rpost(url, data, **kw):
-    res = requests.post(url, json=data, auth=AUTH, **kw)
+    res = requests.post(url, json=data, headers={'Authorization': 'token '+os.getenv('GITHUB_TOKEN')}, **kw)
     if res.headers.get('x-ratelimit-remaining') == '0':
         print("Hit rate limit!")
         return None
@@ -183,8 +181,8 @@ def tag_prs(url):
         current_labels = rget(label_url).json()
         pr_info[pr_number]['labels'] = current_labels
         current_label_names = current_labels and [l['name'] for l in current_labels] or []
-        if not current_label_names:
-            continue
+        # if not current_label_names:
+        #     continue
         print("#%s: %s" % (pull['number'], pull['title']))
         if full_name == DEV_REPO:
             # not already tagged with R&D or OE
