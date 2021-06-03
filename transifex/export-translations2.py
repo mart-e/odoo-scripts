@@ -28,8 +28,8 @@ THEME_TXPATH = e('~/odoo/design-themes/.tx/config')
 l = glob.glob(os.path.join(ADDONS_PATH, '*/__init__.py'))
 # without 'web' as is in enterprise and breaks if more than one 'theme_'
 ADDONS_1 = [os.path.basename(os.path.dirname(i)) for i in l if (
-    # 'l10n_' not in i and
-    # 'theme_' not in i and
+    'l10n_' not in i and
+    'theme_' not in i and
     'hw_' not in i and
     'test' not in i
 # )]
@@ -40,15 +40,21 @@ ADDONS_2 = [os.path.basename(os.path.dirname(i)) for i in l if (
     # 'l10n_ch' not in i and
     # 'l10n_ca' not in i and
     # 'l10n_sa' not in i and
-    'l10n_multilang' not in i)]
-ADDONS_3 = [os.path.basename(os.path.dirname(i)) for i in l if ('l10n_be' in i or 'l10n_ch' in i or 'l10n_sa' in i or 'l10n_multilang' in i)]
+    'l10n_multilang' not in i and
+    'test' not in i and
+    i not in ADDONS_1)]
+ADDONS_3 = [os.path.basename(os.path.dirname(i)) for i in l if (
+    'l10n_be' in i or
+    'l10n_ch' in i or
+    'l10n_sa' in i or
+    'l10n_multilang' in i
+)]
 
 l = glob.glob(os.path.join(ENT_ADDONS_PATH, '*/__init__.py'))
 ENT_ADDONS_1 = [os.path.basename(os.path.dirname(i)) for i in l if (
     'l10n_' not in i and
     'theme_' not in i and
-    'hr_contract_salary' not in i and
-    'pos_blackbox_be' not in i and
+    # 'pos_blackbox_be' not in i and
     os.path.basename(os.path.dirname(i)) != 'sale_ebay'
 )]
 ENT_ADDONS_2 = [os.path.basename(os.path.dirname(i)) for i in l if (
@@ -66,8 +72,7 @@ THEME_ADDONS_1 = [os.path.basename(os.path.dirname(i)) for i in l]
 MODULES_TO_EXPORT = []
 
 uid = None
-url = '%s://%s:%s' % ('http' if port != 443 else 'https', host, port)  # for local instance
-# url = '%s://%s' % ('http' if port != 443 else 'https', host)  # for saas instance
+
 
 def generate_tx_config(addons_path, tx_path, project):
     """ generate the .tx/config file based on list of addons
@@ -98,8 +103,6 @@ source_lang = en
         prepath = 'addons/'
 
     for m in modules:
-        if m == "theme_bootswatch":
-            import pudb;pu.db
         if (m.startswith('l10n_') and m != 'l10n_multilang') or \
                 m.startswith('hw_') or m.startswith('test_') or m.endswith('_test'):
             continue
@@ -107,10 +110,13 @@ source_lang = en
         if not os.path.exists(fname):
             continue
 
-        print(f"Generate tx for {fname}")
-        p = polib.pofile(fname)
-        if not len(p):
-            continue
+        try:
+            print(f"Generate tx for {fname}")
+            p = polib.pofile(fname)
+            if not len(p):
+                continue
+        except:
+            pass
 
         configf.write("""[%s.%s]
 file_filter = %s%s/i18n/<lang>.po
@@ -134,7 +140,8 @@ def install_modules(modules, db, username, password):
     if module_ids:
         models.execute_kw(db, uid, password, 'ir.module.module', 'button_immediate_uninstall',  [module_ids])
 
-    module_ids = models.execute_kw(db, uid, password, 'ir.module.module', 'search',  [[('name', 'in', modules), ('state', '!=', 'installed')]])
+    # module_ids = models.execute_kw(db, uid, password, 'ir.module.module', 'search',  [[('name', 'in', modules), ('state', '!=', 'installed')]])
+    module_ids = models.execute_kw(db, uid, password, 'ir.module.module', 'search',  [[('name', 'in', modules)]])
     print("module_ids", module_ids)
     if module_ids:
         models.execute_kw(db, uid, password, 'ir.module.module', 'button_immediate_install',  [module_ids])
@@ -237,14 +244,22 @@ if __name__ == '__main__':
                         help='user account, default \'admin\'')
     parser.add_argument('-p', '--password',
                         help='password of the user, default \'admin\', using prompt if login but no user is specified')
+    parser.add_argument('--port', default=8069,
+                        help='port to access the server, default \'8069\'')
     parser.add_argument('-m', '--modules',
                         help='the list of modules to install and export, comma separated')
     parser.add_argument('-P', '--project',
                         help='export Transifex configuration file for the following project')
     parser.add_argument('-i', '--install', action='store_true',
                         help='install modules before exporting')
+    parser.add_argument('--no-export', action='store_true',
+                        help='do not export translations')
 
     args = parser.parse_args()
+
+    port = args.port
+    url = '%s://%s:%s' % ('http' if port != 443 else 'https', host, port)  # for local instance
+    # url = '%s://%s' % ('http' if port != 443 else 'https', host)  # for saas instance
     
     if args.login == 'admin' and not args.password:
         args.password = 'admin'
@@ -260,13 +275,14 @@ if __name__ == '__main__':
     else:
         modules = (args.modules or '').split(',')
 
-    modules_per_path = [(list(set(path) & set(modules)), p, tp)
-                        for path, p, tp in [
+    modules_per_path = [(list(set(listed_modules) & set(modules)), p, tp)
+                        for listed_modules, p, tp in [
                             (ADDONS_1, ADDONS_PATH, TXPATH),
                             (ENT_ADDONS_1, ENT_ADDONS_PATH, ENT_TXPATH),
                             (ADDONS_2, ADDONS_PATH, TXPATH),
                             (ENT_ADDONS_2, ENT_ADDONS_PATH, ENT_TXPATH),
                             (ADDONS_3, ADDONS_PATH, TXPATH),
+                            (ENT_ADDONS_3, ENT_ADDONS_PATH, ENT_TXPATH),
                             (THEME_ADDONS_1, THEME_PATH, THEME_TXPATH),
                             ]
 
@@ -278,14 +294,16 @@ if __name__ == '__main__':
 
         if args.project:
             generate_tx_config(addons_path, txpath, args.project)
-            continue
 
         if args.modules == 'theme':
             for module in modules_list:
                 if args.install:
                     install_modules([module], args.database, args.login, args.password)
-                export_terms([module], addons_path, args.database, args.login, args.password)
+                if args.no_export:
+                    export_terms([module], addons_path, args.database, args.login, args.password)
         else:
             if args.install:
                 install_modules(modules_list, args.database, args.login, args.password)
+            if args.no_export:
+                continue
             export_terms(modules_list, addons_path, args.database, args.login, args.password)
