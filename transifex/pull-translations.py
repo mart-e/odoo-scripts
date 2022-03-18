@@ -1,12 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # fetch latest translations from Transifex and commit them
 
 import argparse
 import os
 import subprocess
-import sys
 from datetime import datetime
-from txclib import commands
 
 PULL_ARGS = [
     #'--mode', 'reviewed',
@@ -33,7 +31,7 @@ def pull_project_translation(path_to_tx):
     subprocess.call('touch -d "$(date -R --date=\'22 days ago\')" locale/*/LC_MESSAGES/*', shell=True)
 
     # commands.cmd_pull(PULL_ARGS, path_to_tx)
-    subprocess.call(['python', '/usr/local/bin/tx', 'pull'] + PULL_ARGS)
+    subprocess.call(['tx', 'pull'] + PULL_ARGS)
 
     # remove changes with only Last-Translator or PO-Revision-Date
     subprocess.call("""git status --short | grep '.po' | grep  -v "^??" |  sed 's/^ M *//' | xargs -I {} bash -c 'if test `git diff {} | grep "^+" | grep -v "^+++\|^+#\|Last-Translator\|PO-Revision-Date" | wc -l` -eq 0; then git checkout -- {}; fi'""", shell=True)
@@ -44,13 +42,13 @@ def commit_translations(code_path, commit=False, push=False):
     """Reset the code in :code_path: on current remote and push the new translations"""
     os.chdir(code_path)
     msg = "[I18N] Update translation terms from Transifex"
-    branch = subprocess.check_output('git symbolic-ref -q --short HEAD', shell=True).replace('\n', '')  # branch name
-    remote = subprocess.check_output(['git', 'config', 'branch.%s.remote' % branch]).replace('\n', '')  # remote name
-    print("Fetching and pushing to %s/%s" % (remote, branch))
+    branch = subprocess.check_output('git symbolic-ref -q --short HEAD', shell=True).decode().replace('\n', '')  # branch name
+    remote = subprocess.check_output(['git', 'config', f'branch.{branch}.remote']).decode().replace('\n', '')  # remote name
+    print(f"Fetching and pushing to {remote}/{branch}")
     if commit:
         # make have same code as remote
         subprocess.call(['git', 'fetch', remote, branch])
-        subprocess.call(['git', 'reset', '%s/%s' % (remote, branch), '--hard'])
+        subprocess.call(['git', 'reset', f'{remote}/{branch}', '--hard'])
 
     pull_project_translation(code_path)
 
