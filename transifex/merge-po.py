@@ -14,7 +14,7 @@ from os.path import join as j
 
 ADDONS_SUBPATHS = ['', 'addons', 'openerp/addons', 'odoo/addons']
 
-def merge_po(src_path, new_path, dest_path):
+def merge_po(src_path, new_path, dest_path, filter_lang=False):
 
     def guess_openerp(firstpart, file, addons_subpath, addon):
         guesspath = j(firstpart, addons_subpath, addon, 'i18n', file)
@@ -30,16 +30,20 @@ def merge_po(src_path, new_path, dest_path):
             print("skip subpath '%s'..." % j(dest_path, addons_subpath))
             continue
 
-        for addon in os.listdir(j(dest_path, addons_subpath)):
-
+        for addon in sorted(os.listdir(j(dest_path, addons_subpath))):
             i18n_path = j(dest_path, addons_subpath, addon, 'i18n')
             if not os.path.exists(i18n_path):
                 print("skip '%s'..." % i18n_path)
                 continue
 
             print("Processing '%s'... in %s" % (addon, i18n_path))
+            if filter_lang:
+                suffix = f"{filter_lang}.po"
+            else:
+                suffix = ".po"
+
             # for lang in sorted(filter(lambda x: x == 'de.po', os.listdir(i18n_path))):
-            for lang in sorted(filter(lambda x: x.endswith('.po'), os.listdir(i18n_path))):
+            for lang in sorted(filter(lambda x: x.endswith(suffix), filter_lang and [suffix] or os.listdir(i18n_path))):
 
                 guess = lambda a, b,: guess_openerp(a, b, addons_subpath, addon)
                 src = guess(src_path, lang)
@@ -49,15 +53,22 @@ def merge_po(src_path, new_path, dest_path):
 
                 # language = lang.replace('.po', '')
                 # print("   %s: %s (%s) -> %s (%s)" % (language, src, os.path.exists(src), new, os.path.exists(new)))
-                if not os.path.exists(src):
+                if not os.path.exists(src) and os.path.exists(new):
                     subprocess.call(['cp', new, dest])
-                elif not os.path.exists(new):
+                elif not os.path.exists(new) and os.path.exists(src):
                     subprocess.call(['cp', src, dest])
-                else:
+                elif not os.path.exists(src) and not os.path.exists(new) and not os.path.exists(dest):
+                    subprocess.call(['cp', ref, dest])
+                elif os.path.exists(new) and os.path.exists(src):
                 # cmd = 'msgcat %(src)s %(new)s -o %(dest)s'
-                    subprocess.call(['msgcat', '--no-wrap', '--use-first', src, new, '-o', dest])
-                    subprocess.call(['msgattrib', '--translated', '--no-fuzzy', '--no-obsolete', dest, '-o', dest])
-                cmd = "msgmerge --no-wrap --no-fuzzy-matching -q %(dest)s %(ref)s | msgattrib --no-fuzzy --no-obsolete -o %(dest)s" % {'ref': ref, 'dest': dest}
+                    cmd = ['msgcat', '--no-wrap', '--use-first', new, src, '-o', dest]
+                    # print(" ".join(cmd))
+                    subprocess.call(cmd)
+                    cmd = ['msgattrib', '--no-wrap', '--translated', '--no-fuzzy', '--no-obsolete', dest, '-o', dest]
+                    # print(" ".join(cmd))
+                    subprocess.call(cmd)
+                cmd = "msgmerge --no-wrap --no-fuzzy-matching -q %(dest)s %(ref)s | msgattrib --no-wrap --no-fuzzy --no-obsolete -o %(dest)s" % {'ref': ref, 'dest': dest}
+                # print(cmd)
                 subprocess.call(cmd, shell=True)
                 # subprocess.call(['msgmerge', dest, ref, '--update', '-N'])
 
@@ -70,6 +81,12 @@ if __name__ == '__main__':
                         help='path to reference translations')
     parser.add_argument('--dest', required=True,
                         help='path where generated po will be stored')
+    parser.add_argument('--lang', help='optional language to filter')
 
     args = parser.parse_args()
-    merge_po(args.ref, args.trad, args.dest)
+    if args.lang:
+        for lang in args.lang.split(","):
+            merge_po(args.ref, args.trad, args.dest, lang)
+    else:
+        merge_po(args.ref, args.trad, args.dest, args.lang)
+
