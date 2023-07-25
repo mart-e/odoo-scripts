@@ -25,7 +25,7 @@ ENT_ADDONS_PATH = e('~/odoo/enterprise/')
 ENT_TXPATH = e('~/odoo/enterprise/.tx/config')
 THEME_PATH = e('~/odoo/design-themes/')
 THEME_TXPATH = e('~/odoo/design-themes/.tx/config')
-TX_BIN = "/home/mat/odoo/tx"
+TX_BIN = "/usr/bin/tx"
 
 l = set([os.path.basename(os.path.dirname(i)) for i in glob.glob(os.path.join(ADDONS_PATH, '*/__init__.py'))])
 # without 'web' as is in enterprise and breaks if more than one 'theme_'
