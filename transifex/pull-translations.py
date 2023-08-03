@@ -14,12 +14,14 @@ PULL_ARGS = [
     #'--minimum-perc', '10'
 ]
 
-
 # path_to_tx = len(sys.argv) > 1 and sys.argv[1] or utils.find_dot_tx()
 def pull_project_translation(path_to_tx):
     """Fetch the translations from Transifex
     path_to_tx: path containing a .tx/config file
     """
+
+    subprocess.call(['tx', 'push', '-s'])
+
     print("Fetching translations at %s" % datetime.now().isoformat())
     print("Pulling to %s" % path_to_tx)
 
