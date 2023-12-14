@@ -8,21 +8,23 @@ from datetime import datetime
 
 PULL_ARGS = [
     #'--mode', 'reviewed',
-    '--skip',
+    #'--skip',
     '--all',
+    #'--silent',
     #'--force',
     #'--minimum-perc', '10'
 ]
+TX_BIN = "/home/odoo/tx-cli/tx"
 
 # path_to_tx = len(sys.argv) > 1 and sys.argv[1] or utils.find_dot_tx()
 def pull_project_translation(path_to_tx):
     """Fetch the translations from Transifex
     path_to_tx: path containing a .tx/config file
     """
-
-    subprocess.call(['tx', 'push', '-s'])
-
     print("Fetching translations at %s" % datetime.now().isoformat())
+    print("Pushing sources")
+    subprocess.call([TX_BIN, 'push', '-s'])
+    
     print("Pulling to %s" % path_to_tx)
 
     # tx uses timestamp to know if we should fetch translations, git doesn't give a shit about timestamp
@@ -31,9 +33,10 @@ def pull_project_translation(path_to_tx):
     subprocess.call('touch -d "$(date -R --date=\'22 days ago\')" openerp/addons/*/i18n/*', shell=True)
     subprocess.call('touch -d "$(date -R --date=\'22 days ago\')" odoo/addons/*/i18n/*', shell=True)
     subprocess.call('touch -d "$(date -R --date=\'22 days ago\')" locale/*/LC_MESSAGES/*', shell=True)
+    subprocess.call('touch -d "$(date -R --date=\'22 days ago\')" app/src/main/res/*/strings.xml', shell=True)
 
     # commands.cmd_pull(PULL_ARGS, path_to_tx)
-    subprocess.call(['tx', 'pull'] + PULL_ARGS)
+    subprocess.call([TX_BIN, 'pull'] + PULL_ARGS)
 
     # remove changes with only Last-Translator or PO-Revision-Date
     subprocess.call("""git status --short | grep '.po' | grep  -v "^??" |  sed 's/^ M *//' | xargs -I {} bash -c 'if test `git diff {} | grep "^+" | grep -v "^+++\|^+#\|Last-Translator\|PO-Revision-Date" | wc -l` -eq 0; then git checkout -- {}; fi'""", shell=True)
