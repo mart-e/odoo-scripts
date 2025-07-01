@@ -113,7 +113,7 @@ commands:
 args:
   PATH: path to the repository containing the translations
   PROJECT: slug of weblate project (i.e. odoo-18)
-  COMPONENT: slug of weblate component (i.e. account)"""
+  COMPONENT: slug of weblate component (i.e. account), * for all"""
     if len(sys.argv) < 2:
         print(usage)
         sys.exit()
