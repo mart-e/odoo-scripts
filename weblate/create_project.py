@@ -47,7 +47,7 @@ def get_components():
     #tot = r['count']  # TODO pagination
     return [c['slug'] for c in r['results']]
 
-def create_component(path: Path, project, base_path):
+def create_component(project, path: Path, base_path, reference):
     branch = subprocess.run("git symbolic-ref -q --short HEAD", shell=True, capture_output=True, cwd=str(base_path)) \
         .stdout \
         .decode() \
@@ -64,17 +64,20 @@ def create_component(path: Path, project, base_path):
             "file_format": "po",
             "new_base": f"{local_path}/i18n/{path.name}.pot",
             "filemask": f"{local_path}/i18n/*.po",
-            "repo": "https://github.com/odoo/odoo",
+            "repo": f"weblate:{project}/{reference}",  # TODO not working yet
     })
     if r.status_code != 201:
         return r.text
     return None
 
-def create(path, project):
-    base_path = Path(sys.argv[1]).resolve()
+def create(project, path):
+    base_path = Path(path).resolve()
     pots = sorted(scan_path(base_path))
-    project = sys.argv[2]
     components = get_components()
+    if not components:
+        print("No existing components, create at least one manually for checkout")
+        sys.exit()
+    reference = sorted(components)[0]
     
     print("Addons found:")
     for pot in pots:
@@ -82,7 +85,7 @@ def create(path, project):
         if pot.name not in components:
             print(f"{pot.name}: creating… ", end='', flush=True)
             t1 = time.time()
-            error = create_component(pot, project, base_path)
+            error = create_component(project, pot, base_path, reference)
             if error:
                 print("ko:", error)
             else:
@@ -106,7 +109,7 @@ def shell():
 if __name__ == "__main__":
     usage = f"""Usage: {sys.argv[0]} [COMMAND]
 commands:
-  create [PATH] [PROJECT]
+  create [PROJECT] [PATH]
   delete [PROJECT] [COMPONENT]
   shell
 
