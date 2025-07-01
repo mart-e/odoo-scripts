@@ -15,30 +15,12 @@ __pycache__/
 # hg stuff
 *.orig
 status
-# odoo filestore
-odoo/filestore
-# maintenance migration scripts
-odoo/addons/base/maintenance
-
-# generated for windows installer?
-install/win32/*.bat
-install/win32/meta.py
-
-# needed only when building for win32
-setup/win32/static/less/
-setup/win32/static/wkhtmltopdf/
-setup/win32/static/postgresql*.exe
-
-# various virtualenv
-/bin/
-/build/
-/dist/
-/include/
-/lib/
-/man/
-/share/
-/src/
 
 *.json
+*.txt
+*.csv
+
+github/close_old_pr.py
+github/code_search.py
 
 .env

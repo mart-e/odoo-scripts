@@ -14,9 +14,14 @@ load_dotenv(find_dotenv())
 BASE_URL = os.environ['WEBLATE_URL']
 HEADERS = {"Authorization": f"Token {os.environ['WEBLATE_API_TOKEN']}", 'Content-Type': 'application/json', 'User-Agent': 'C3POdoo python-requests'}
 
-COMPONENTS_URI = "/api/components/"
-COMPONENT_URI = "/api/projects/{project}/components/"
+ALL_COMPONENTS_URI = "/api/components/"
+PROJECT_COMPONENTS_URI = "/api/projects/{project}/components/"
+COMPONENT_URI = "/api/components/{project}/{component}/"
 
+GET = lambda uri, **kw: requests.get(BASE_URL + uri, headers=HEADERS, **kw)
+POST = lambda uri, **kw: requests.post(BASE_URL + uri, headers=HEADERS, **kw)
+DELETE = lambda uri, **kw: requests.delete(BASE_URL + uri, headers=HEADERS, **kw)
+PUT = lambda uri, **kw: requests.put(BASE_URL + uri, headers=HEADERS, **kw)
 
 def scan_path(path: Path):
     if not path.exists():
@@ -38,7 +43,7 @@ def scan_path(path: Path):
     return pots
 
 def get_components():
-    r = requests.get(BASE_URL + COMPONENTS_URI, headers=HEADERS).json()
+    r = GET(ALL_COMPONENTS_URI).json()
     #tot = r['count']  # TODO pagination
     return [c['slug'] for c in r['results']]
 
@@ -49,8 +54,7 @@ def create_component(path: Path, project, base_path):
         .strip()
     local_path = str(path).split(str(base_path))[1][1:]  # odoo/addons/base
 
-    r = requests.post(BASE_URL + COMPONENT_URI.format(project=project),
-        headers=HEADERS,
+    r = POST(PROJECT_COMPONENTS_URI.format(project=project),
         json={
             "project": project,
             "name": f"o:odoo:p:{project}:r:{path.name}",
@@ -66,12 +70,7 @@ def create_component(path: Path, project, base_path):
         return r.text
     return None
 
-
-if __name__ == "__main__":
-    if len(sys.argv) < 3:
-        print(f"Usage: {sys.argv[0]} [PATH] [PROJECT]\n  PATH: path to the repository containing the translations\n  PROJECT: slug of weblate project (i.e. odoo-18)")
-        sys.exit()
-
+def create(path, project):
     base_path = Path(sys.argv[1]).resolve()
     pots = sorted(scan_path(base_path))
     project = sys.argv[2]
@@ -91,3 +90,46 @@ if __name__ == "__main__":
 
         else:
             print(f"{pot.name}: skip")
+
+def delete(project, component):
+    print(f"Deleting component {project}/{component}")
+    r = DELETE(COMPONENT_URI.format(project=project, component=component))
+    if r.status_code != 204:
+        print(r.status_code)
+        print(r.text)
+
+def shell():
+    import pudb
+    pudb.set_trace()
+
+
+if __name__ == "__main__":
+    usage = f"""Usage: {sys.argv[0]} [COMMAND]
+commands:
+  create [PATH] [PROJECT]
+  delete [PROJECT] [COMPONENT]
+  shell
+
+args:
+  PATH: path to the repository containing the translations
+  PROJECT: slug of weblate project (i.e. odoo-18)
+  COMPONENT: slug of weblate component (i.e. account)"""
+    if len(sys.argv) < 2:
+        print(usage)
+        sys.exit()
+
+    command = sys.argv[1]
+    if command == 'create':
+        create(sys.argv[2], sys.argv[3])
+    elif command == 'shell':
+        shell()
+    elif command == "delete":
+        if sys.argv[3] == "*":
+            for component in get_components():
+                delete(sys.argv[2], component)
+        else:
+            delete(sys.argv[2], sys.argv[3])
+    else:
+        print(usage)
+        sys.exit()
+
