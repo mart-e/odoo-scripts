@@ -34,8 +34,9 @@ ADDONS_1 = sorted([i for i in l if (
     'theme_' not in i and
     'hw_' not in i and
     'test' not in i and
-    'ldap' not in i
-    #not i.startswith('payment_')
+    # 'ldap' not in i and
+    i not in ['payment_alipay', 'payment_ogone', 'payment_payulatam', 'payment_payumoney']
+    # not i.startswith('payment_')
 # )]
 )] + ['base'])
 
@@ -47,7 +48,8 @@ l = glob.glob(os.path.join(ENT_ADDONS_PATH, '*/__init__.py'))
 ENT_ADDONS_1 = [os.path.basename(os.path.dirname(i)) for i in l if (
     ('l10n_' not in i) and
     'theme_' not in i and
-    'pos_blackbox_be' not in i and
+    'taxcloud' not in i and
+    i not in ['pos_blackbox_be', 'account_taxcloud'] and
     'test' not in i
     # os.path.basename(os.path.dirname(i)) != 'sale_ebay'
 )]
@@ -163,7 +165,7 @@ def install_modules(modules, db, username, password, uninstall_incompatible=Fals
 
     module_ids = models.execute_kw(db, uid, password, 'ir.module.module', 'search',  [[('name', 'in', modules), ('state', '!=', 'installed')]])
     # module_ids = models.execute_kw(db, uid, password, 'ir.module.module', 'search',  [[('name', 'in', modules)]])
-    print("installing", modules)
+    print("installing", sorted(modules))
     print("module_ids", module_ids)
     if module_ids:
         models.execute_kw(db, uid, password, 'ir.module.module', 'button_immediate_install',  [module_ids])

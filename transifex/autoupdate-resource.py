@@ -11,15 +11,17 @@ load_dotenv(find_dotenv())
 
 APISERVER = "https://api.transifex.com"
 ORGANIZATION = "odoo"
-PROJECT_NAME = "odoo-13"
-PROJECT_NAME = "odoo-master"
-PATH_TO_ADDONS = "/home/mat/odoo/documentation-user"
-PATH_TO_ADDONS = "/home/mat/odoo/odoo/addons"
 PATH_TO_ENT = "/home/mat/odoo/enterprise"
 
-VERSION = "saas-13.1"
-RAW_URL = "https://raw.githubusercontent.com/%s/documentation-user/%s/locale/sources/{module}.pot" % (ORGANIZATION, VERSION)
+VERSION = "16.0"
+
+PROJECT_NAME = "odoo-16"
+PATH_TO_ADDONS = "/home/mat/odoo/odoo/addons"
 RAW_URL = "https://raw.githubusercontent.com/%s/odoo/%s/addons/{module}/i18n/{module}.pot" % (ORGANIZATION, VERSION)
+
+PROJECT_NAME = "odoo-16-doc"
+PATH_TO_ADDONS = "/home/mat/odoo/documentation-user/content"
+RAW_URL = "https://raw.githubusercontent.com/%s/documentation/%s/locale/sources/{module}.pot" % (ORGANIZATION, VERSION)
 
 CSRFTOKEN = os.getenv('TRANSIFEX_CSRFTOKEN')
 SESSIONID = os.getenv('TRANSIFEX_SESSIONID')
@@ -101,8 +103,8 @@ if orphan_resources:
 
 for addons_path in sorted(os.listdir(PATH_TO_ADDONS)):
     if not res.get(addons_path):
-        if 'l10n' not in addons_path:
-            print(f"   missing resource {addons_path}")
+        # if 'l10n' not in addons_path:
+        print(f"   missing resource {addons_path}")
         continue
 
     print(f"processing {addons_path}...")

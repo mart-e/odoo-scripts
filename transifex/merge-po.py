@@ -42,7 +42,7 @@ def merge_po(src_path, new_path, dest_path, filter_lang=False):
             else:
                 suffix = ".po"
 
-            # for lang in sorted(filter(lambda x: x == 'de.po', os.listdir(i18n_path))):
+            # for lang in sorted(filter(lambda x: 'es_' in x and x != 'es_MX', os.listdir(i18n_path))):
             for lang in sorted(filter(lambda x: x.endswith(suffix), filter_lang and [suffix] or os.listdir(i18n_path))):
 
                 guess = lambda a, b,: guess_openerp(a, b, addons_subpath, addon)

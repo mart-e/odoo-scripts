@@ -45,6 +45,7 @@ def install_modules(modules, db, username, password):
                 ("state", "!=", "uninstalled"),
             ]
         ],
+        {"context": {"lang": "fr_FR"}}
     )
     if module_ids:
         models.execute_kw(
