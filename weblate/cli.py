@@ -48,22 +48,24 @@ def get_components():
     return [c['slug'] for c in r['results']]
 
 def create_component(project, path: Path, base_path, reference):
-    branch = subprocess.run("git symbolic-ref -q --short HEAD", shell=True, capture_output=True, cwd=str(base_path)) \
-        .stdout \
-        .decode() \
-        .strip()
+    # branch = subprocess.run("git symbolic-ref -q --short HEAD", shell=True, capture_output=True, cwd=str(base_path)) \
+    #     .stdout \
+    #     .decode() \
+    #     .strip()
     local_path = str(path).split(str(base_path))[1][1:]  # odoo/addons/base
+    print(f"Creating o:odoo:p:{project}:r:{path.name} (repo: weblate:{project}/{reference}, new_base: {local_path}/i18n/{path.name}.pot)")
 
     r = POST(PROJECT_COMPONENTS_URI.format(project=project),
         json={
             "project": project,
             "name": f"o:odoo:p:{project}:r:{path.name}",
             "slug": path.name,
-            "branch": branch,
-            "vcs": "git",
+            #"branch": branch,
             "file_format": "po",
             "new_base": f"{local_path}/i18n/{path.name}.pot",
             "filemask": f"{local_path}/i18n/*.po",
+            "vcs": "local",
+            #"repo": "local:",  # TODO not working yet
             "repo": f"weblate:{project}/{reference}",  # TODO not working yet
     })
     if r.status_code != 201:
@@ -90,6 +92,7 @@ def create(project, path):
                 print("ko:", error)
             else:
                 print(f"ok ({int(time.time()-t1)}sec)")
+            break
 
         else:
             print(f"{pot.name}: skip")
