@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import os
-import subprocess
 import sys
 import time
 from pathlib import Path
@@ -10,6 +9,9 @@ import requests
 
 from dotenv import load_dotenv, find_dotenv
 load_dotenv(find_dotenv())
+if not os.getenv('WEBLATE_API_TOKEN') and os.getenv('WEBLATE_URL'):
+    print("Create a .env file containing at least WEBLATE_URL and WEBLATE_API_TOKEN")
+    sys.exit()
 
 BASE_URL = os.environ['WEBLATE_URL']
 HEADERS = {"Authorization": f"Token {os.environ['WEBLATE_API_TOKEN']}", 'Content-Type': 'application/json', 'User-Agent': 'C3POdoo python-requests'}
@@ -18,10 +20,10 @@ ALL_COMPONENTS_URI = "/api/components/"
 PROJECT_COMPONENTS_URI = "/api/projects/{project}/components/"
 COMPONENT_URI = "/api/components/{project}/{component}/"
 
-GET = lambda uri, **kw: requests.get(BASE_URL + uri, headers=HEADERS, **kw)
-POST = lambda uri, **kw: requests.post(BASE_URL + uri, headers=HEADERS, **kw)
-DELETE = lambda uri, **kw: requests.delete(BASE_URL + uri, headers=HEADERS, **kw)
-PUT = lambda uri, **kw: requests.put(BASE_URL + uri, headers=HEADERS, **kw)
+GET = lambda uri, **kw: requests.get(uri.startswith('/') and BASE_URL + uri or uri, headers=HEADERS, **kw)
+POST = lambda uri, **kw: requests.post(uri.startswith('/') and BASE_URL + uri or uri, headers=HEADERS, **kw)
+DELETE = lambda uri, **kw: requests.delete(uri.startswith('/') and BASE_URL + uri or uri, headers=HEADERS, **kw)
+PUT = lambda uri, **kw: requests.put(uri.startswith('/') and BASE_URL + uri or uri, headers=HEADERS, **kw)
 
 def scan_path(path: Path):
     if not path.exists():
@@ -42,31 +44,32 @@ def scan_path(path: Path):
 
     return pots
 
-def get_components():
-    r = GET(ALL_COMPONENTS_URI).json()
-    #tot = r['count']  # TODO pagination
-    return [c['slug'] for c in r['results']]
+def get_components(project=False):
+    if project:
+        uri = PROJECT_COMPONENTS_URI.format(project=project)
+    else:
+        uri = ALL_COMPONENTS_URI
+    res = []
+    while uri:
+        r = GET(uri).json()
+        res.extend([c['slug'] for c in r['results']])
+        uri = r.get('next')
+    return res
 
 def create_component(project, path: Path, base_path, reference):
-    # branch = subprocess.run("git symbolic-ref -q --short HEAD", shell=True, capture_output=True, cwd=str(base_path)) \
-    #     .stdout \
-    #     .decode() \
-    #     .strip()
     local_path = str(path).split(str(base_path))[1][1:]  # odoo/addons/base
-    print(f"Creating o:odoo:p:{project}:r:{path.name} (repo: weblate:{project}/{reference}, new_base: {local_path}/i18n/{path.name}.pot)")
 
     r = POST(PROJECT_COMPONENTS_URI.format(project=project),
         json={
             "project": project,
             "name": f"o:odoo:p:{project}:r:{path.name}",
             "slug": path.name,
-            #"branch": branch,
             "file_format": "po",
             "new_base": f"{local_path}/i18n/{path.name}.pot",
             "filemask": f"{local_path}/i18n/*.po",
-            "vcs": "local",
-            #"repo": "local:",  # TODO not working yet
-            "repo": f"weblate:{project}/{reference}",  # TODO not working yet
+            "vcs": "git",
+            "repo": f"weblate://{project}/{reference}",
+            "template": "",
     })
     if r.status_code != 201:
         return r.text
@@ -75,7 +78,7 @@ def create_component(project, path: Path, base_path, reference):
 def create(project, path):
     base_path = Path(path).resolve()
     pots = sorted(scan_path(base_path))
-    components = get_components()
+    components = get_components(project)
     if not components:
         print("No existing components, create at least one manually for checkout")
         sys.exit()
@@ -90,9 +93,9 @@ def create(project, path):
             error = create_component(project, pot, base_path, reference)
             if error:
                 print("ko:", error)
+                break
             else:
                 print(f"ok ({int(time.time()-t1)}sec)")
-            break
 
         else:
             print(f"{pot.name}: skip")
