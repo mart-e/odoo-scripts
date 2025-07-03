@@ -40,6 +40,9 @@ def scan_path(path: Path):
             pots += scan_path(d)
         else:
             if (d / 'i18n' / f"{d.name}.pot").exists():
+                if len(list((d / 'i18n').iterdir())) == 1:
+                    # TODO can not pot if filemask i18n/*.po does not match any file
+                    continue
                 pots.append(d)
 
     return pots
@@ -59,6 +62,12 @@ def get_components(project=False):
 def create_component(project, path: Path, base_path, reference):
     local_path = str(path).split(str(base_path))[1][1:]  # odoo/addons/base
 
+    if reference.startswith("git@") or reference.startswith("https://"):
+        repo = reference
+        # TODO branch !
+    else:
+        repo = f"weblate://{project}/{reference}"
+
     r = POST(PROJECT_COMPONENTS_URI.format(project=project),
         json={
             "project": project,
@@ -68,27 +77,33 @@ def create_component(project, path: Path, base_path, reference):
             "new_base": f"{local_path}/i18n/{path.name}.pot",
             "filemask": f"{local_path}/i18n/*.po",
             "vcs": "git",
-            "repo": f"weblate://{project}/{reference}",
+            "repo": repo,
             "template": "",
     })
     if r.status_code != 201:
         return r.text
     return None
 
-def create(project, path):
+def create(project, path, repo=False):
     base_path = Path(path).resolve()
     pots = sorted(scan_path(base_path))
     components = get_components(project)
-    if not components:
-        print("No existing components, create at least one manually for checkout")
+    reference = False
+
+    if not components and not repo:
+        print("No existing components, specify reference repository")
         sys.exit()
-    reference = sorted(components)[0]
     
     print("Addons found:")
     for pot in pots:
+        if not reference and repo:
+            # only one time
+            reference = repo
+        else:
+            reference = sorted(list({p.name for p in pots} & set(components)))[0]
 
         if pot.name not in components:
-            print(f"{pot.name}: creating… ", end='', flush=True)
+            print(f"{pot.name}: creating… (ref {reference}) ", end='', flush=True)
             t1 = time.time()
             error = create_component(project, pot, base_path, reference)
             if error:
@@ -96,6 +111,7 @@ def create(project, path):
                 break
             else:
                 print(f"ok ({int(time.time()-t1)}sec)")
+                components += pot.name
 
         else:
             print(f"{pot.name}: skip")
@@ -115,21 +131,26 @@ def shell():
 if __name__ == "__main__":
     usage = f"""Usage: {sys.argv[0]} [COMMAND]
 commands:
-  create [PROJECT] [PATH]
-  delete [PROJECT] [COMPONENT]
+  create PROJECT PATH [GIT]
+  delete PROJECT COMPONENT
   shell
 
 args:
+  COMPONENT: slug of weblate component (i.e. account), * for all
+  GIT: url of the git repository to checkout
   PATH: path to the repository containing the translations
-  PROJECT: slug of weblate project (i.e. odoo-18)
-  COMPONENT: slug of weblate component (i.e. account), * for all"""
+  PROJECT: slug of weblate project (i.e. odoo-18)"""
     if len(sys.argv) < 2:
         print(usage)
         sys.exit()
 
     command = sys.argv[1]
     if command == 'create':
-        create(sys.argv[2], sys.argv[3])
+        if len(sys.argv) == 5:
+            project, path, repo = sys.argv[2:]
+        else:
+            project, path, repo = sys.argv[2], sys.argv[3], False
+        create(project, path, repo)
     elif command == 'shell':
         shell()
     elif command == "delete":
