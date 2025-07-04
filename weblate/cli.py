@@ -2,6 +2,7 @@
 
 import os
 import sys
+import subprocess
 import time
 from pathlib import Path
 
@@ -64,10 +65,15 @@ def create_component(project, path: Path, base_path, reference):
 
     if reference.startswith("git@") or reference.startswith("https://"):
         repo = reference
-        # TODO branch !
+        branch = subprocess.run("git symbolic-ref -q --short HEAD", shell=True, capture_output=True, cwd=str(base_path)) \
+            .stdout \
+            .decode() \
+            .strip()
     else:
         repo = f"weblate://{project}/{reference}"
+        branch = ""
 
+    #print(f"Creating o:odoo:p:{project}:r:{path.name} based on {repo}({branch}), {local_path}/i18n/{path.name}.pot")
     r = POST(PROJECT_COMPONENTS_URI.format(project=project),
         json={
             "project": project,
@@ -78,6 +84,7 @@ def create_component(project, path: Path, base_path, reference):
             "filemask": f"{local_path}/i18n/*.po",
             "vcs": "git",
             "repo": repo,
+            "branch": branch,
             "template": "",
     })
     if r.status_code != 201:
@@ -100,7 +107,11 @@ def create(project, path, repo=False):
             # only one time
             reference = repo
         else:
-            reference = sorted(list({p.name for p in pots} & set(components)))[0]
+            commons = sorted(list({p.name for p in pots} & set(components)))
+            if not commons:
+                print(f"No existing components from {base_path} in {project}, specify a reference repository")
+                sys.exit()
+            reference = commons[0]
 
         if pot.name not in components:
             print(f"{pot.name}: creating… (ref {reference}) ", end='', flush=True)
@@ -111,7 +122,7 @@ def create(project, path, repo=False):
                 break
             else:
                 print(f"ok ({int(time.time()-t1)}sec)")
-                components += pot.name
+                components.append(pot.name)
 
         else:
             print(f"{pot.name}: skip")
