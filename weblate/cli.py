@@ -1,4 +1,9 @@
 #!/usr/bin/env python
+#
+# CLI to manage basic operations on weblate
+# to import a new version, run:
+# $ cli.py create odoo-19 odoo/ "git@github.com:odoo/odoo.git"
+#
 
 import os
 import sys
